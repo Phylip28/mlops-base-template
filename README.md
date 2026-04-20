@@ -14,7 +14,8 @@ Este proyecto adopta **Arquitectura Hexagonal (Puertos y Adaptadores)** para gar
 - ✅ Flexibilidad de infraestructura (Kafka / Redpanda, Bases de datos en memoria).
 - ✅ Mantenibilidad y escalabilidad.
 
-Ver documentación de la Fase 1 en [`ARCHITECTURE.md`](ARCHITECTURE.md).
+Ver documentacion de la Fase 1 en [docs/phase-1-streaming.md](docs/phase-1-streaming.md).
+Indice general de documentacion: [docs/README.md](docs/README.md).
 
 ## 📋 Requisitos Previos
 
