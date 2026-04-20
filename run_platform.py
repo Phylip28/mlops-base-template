@@ -1,22 +1,58 @@
+import os
+import shutil
 import subprocess
 import sys
-import threading
 import time
 import webbrowser
 
 
-def start_api() -> None:
-    print("[API] Iniciando Uvicorn en background...", flush=True)
-    # Ejecutamos con el entorno virtual para asegurarnos de que encuentre todo
-    cmd = (
-        "powershell -Command "
-        '"& .\\.venv\\Scripts\\Activate.ps1 ; '
-        "$env:PYTHONPATH='.' ; "
-        "uvicorn src.model_service.infrastructure.entrypoints.api:app "
-        '--host 0.0.0.0 --port 8000"'
+def _resolve_docker_compose() -> list[str]:
+    """Resuelve el comando disponible entre docker compose y docker-compose."""
+    if shutil.which("docker-compose"):
+        return ["docker-compose"]
+
+    if shutil.which("docker"):
+        result = subprocess.run(
+            ["docker", "compose", "version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if result.returncode == 0:
+            return ["docker", "compose"]
+
+    raise RuntimeError(
+        "No se encontro Docker Compose. Instala 'docker compose' o 'docker-compose'."
     )
-    # Subproceso bloqueante para el hilo
-    subprocess.run(cmd, shell=True)
+
+
+def start_api() -> subprocess.Popen[bytes]:
+    print("[API] Iniciando Uvicorn en background...", flush=True)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "."
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "uvicorn",
+        "src.model_service.infrastructure.entrypoints.api:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+    ]
+    return subprocess.Popen(cmd, env=env)
+
+
+def _stop_api_process(api_process: subprocess.Popen[bytes]) -> None:
+    if api_process.poll() is not None:
+        return
+
+    api_process.terminate()
+    try:
+        api_process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        api_process.kill()
 
 
 def main() -> None:
@@ -26,12 +62,20 @@ def main() -> None:
 
     # 1. Iniciar Docker Compose
     print("\n[1/3] Levantando infraestructura (MLflow, MinIO, Postgres)...")
-    subprocess.run("docker-compose up -d", shell=True)
+    try:
+        compose_cmd = _resolve_docker_compose()
+        subprocess.run(compose_cmd + ["up", "-d"], check=True)
+    except (RuntimeError, subprocess.CalledProcessError) as err:
+        print(f"Error levantando Docker Compose: {err}")
+        sys.exit(1)
 
     # 2. Iniciar API Backend
     print("\n[2/3] Levantando la API REST Server en puerto 8000...")
-    api_thread = threading.Thread(target=start_api, daemon=True)
-    api_thread.start()
+    try:
+        api_process = start_api()
+    except Exception as err:
+        print(f"Error iniciando API: {err}")
+        sys.exit(1)
 
     # Esperar prudencial
     print("Esperando 10s a que los servicios esten listos...")
@@ -73,20 +117,26 @@ def main() -> None:
     )
     try:
         while True:
+            if api_process.poll() is not None:
+                print("\nLa API se detuvo inesperadamente. Revisa logs del proceso.")
+                break
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n\nDeteniendo ejecución del script de consola...")
+        _stop_api_process(api_process)
         print("¿Deseas apagar también los contenedores Docker? (s/n)")
         try:
             ans = input().strip().lower()
-            if ans == "s":
+            if ans in {"s", "y", "yes"}:
                 print("Ejecutando docker-compose down...")
-                subprocess.run("docker-compose down", shell=True)
+                subprocess.run(compose_cmd + ["down"], check=False)
                 print("Contenedores detenidos.")
         except Exception:
             pass
         print("¡Hasta luego!")
         sys.exit(0)
+
+    _stop_api_process(api_process)
 
 
 if __name__ == "__main__":
