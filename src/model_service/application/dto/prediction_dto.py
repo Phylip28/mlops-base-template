@@ -1,43 +1,16 @@
-from typing import Any, Dict, Optional
-
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, ConfigDict
+from typing import Dict, Any, Optional
 
 class PredictionRequestDTO(BaseModel):
-    """Objeto gen茅rico para recibir datos de inferencia."""
-
-    features: Dict[str, Any] = Field(
-        ..., description="Diccionario de caracter铆sticas din谩micas para el modelo"
-    )
-
+    model_config = ConfigDict(extra='allow')
+    features: Dict[str, Any]
 
 class PredictionResponseDTO(BaseModel):
-    """Objeto gen茅rico para devolver la predicci贸n."""
+    use_case: str
+    prediction: Any
+    model_version: str
+    is_anomaly: bool = False
 
-    prediction: Any = Field(
-        ..., description="El resultado de la predicci贸n (clase o valor)"
-    )
-    probability: Optional[float] = Field(
-        default=None, description="Probabilidad (si aplica)"
-    )
-    model_version: str = Field(
-        ..., description="Versi贸n del modelo que atendi贸 la petici贸n"
-    )
-
-
-class TrainRequestDTO(BaseModel):
-    """Objeto para recibir datos de entrenamiento del AutoML."""
-
-    dataset_path: str = Field(
-        ..., description="Ruta f胹ica o URI del dataset CSV a procesar"
-    )
-    target_column: str = Field(
-        default="target", description="Nombre de la columna a predecir"
-    )
-    experiment_name: str = Field(
-        default="automl_experiment", description="Nombre del experimento de MLflow"
-    )
-    model_name: str = Field(
-        default="ChampionModel", description="Nombre del modelo a registrar"
-    )
-
+class IngestionDTO(BaseModel):
+    features: Dict[str, Any]
+    target: Any = None

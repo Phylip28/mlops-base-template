@@ -1,132 +1,79 @@
 import os
-from collections.abc import AsyncIterator
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Dict, Any
 
-import mlflow
-import pandas as pd
-from fastapi import FastAPI, HTTPException
+from src.model_service.application.dto.prediction_dto import PredictionRequestDTO, PredictionResponseDTO, IngestionDTO
+from src.model_service.application.services.anomaly_service import AnomalyDetectionService
+from src.model_service.application.services.orchestrator import MultiTenantAutoMLOrchestrator
 
-from model_service.application.dto.prediction_dto import (
-    PredictionRequestDTO,
-    PredictionResponseDTO,
-    TrainRequestDTO,
-)
-from model_service.application.services.orchestrator import AutoMLOrchestrator
-
-# Usar un .env para producción
 os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://localhost:9000"
 os.environ["AWS_ACCESS_KEY_ID"] = "minio_user"
 os.environ["AWS_SECRET_ACCESS_KEY"] = "minio_password"
-mlflow.set_tracking_uri("http://localhost:5000")
 
-# Variable donde vivirá nuestro modelo en memoria
-model_cache: dict[str, Any] = {}
+model_cache: Dict[str, Any] = {}
+anomaly_detector = AnomalyDetectionService()
+orchestrator = MultiTenantAutoMLOrchestrator()
 
+def load_champion_model(use_case: str):
+    import mlflow
+    mlflow.set_tracking_uri("http://localhost:5000")
+    try:
+        model_uri = f"models:/{use_case}_model@champion"
+        return mlflow.pyfunc.load_model(model_uri)
+    except Exception as e:
+        print(f"El modelo aun no existe en MLflow ({e})")
+        return None
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """
-    Ciclo de vida de FastAPI.
-    Todo lo que está antes del 'yield' se ejecuta al prender el servidor.
-    """
-    print("Iniciando API... Conectando con MLflow...")
-    model_name = "ChampionModel"
-    model_alias = "champion"
-
-    try:
-        # URI mÃ¡gica de MLflow para descargar modelos registrados con alias
-        model_uri = f"models:/{model_name}@{model_alias}"
-        print(f"Descargando modelo desde: {model_uri}")
-
-        # Va a Postgres, averigua dónde está en MinIO, lo descarga y lo carga en memoria
-        loaded_model = mlflow.pyfunc.load_model(model_uri)
-
-        # Lo guardamos en caché
-        model_cache["predictor"] = loaded_model
-        model_cache["version"] = model_alias
-        print("¡Modelo cargado en memoria exitosamente!")
-    except Exception as e:
-        print(f"Error cargando el modelo: {e}")
-        # En una plantilla base real, evitamos que la API crashee si no hay modelo,
-
-    yield  # Aquí el servidor está vivo y recibiendo peticiones
-
-    # Lo que está después del yield se ejecuta al apagar el servidor
+async def lifespan(app: FastAPI):
+    print("Iniciando API MLOps Multi-tenant conectada a Docker...")
+    yield
     print("Apagando API y liberando memoria...")
     model_cache.clear()
 
+app = FastAPI(title="Multi-Tenant MLOps API", lifespan=lifespan)
 
-# Crear la app usando el lifespan
-app = FastAPI(
-    title="MLOps Generic Serving API",
-    description="Plantilla base conectada a MLflow",
-    version="0.1.0",
-    lifespan=lifespan,
-)
+@app.post("/predict/{use_case}", response_model=PredictionResponseDTO)
+async def predict_dynamic(use_case: str, payload: PredictionRequestDTO):
+    if use_case not in model_cache or model_cache[use_case] is None:
+        model_cache[use_case] = load_champion_model(use_case)
+        
+    model = model_cache.get(use_case)
+    is_anomaly = anomaly_detector.detect_anomaly(use_case, payload.features)
 
-
-# Health check básico para monitoreo
-@app.get("/health")
-def health_check() -> dict[str, str]:
-    status = "healthy" if "predictor" in model_cache else "degraded - no model"
-    return {"status": status}
-
-
-# Endpoint de inferencia
-@app.post("/predict", response_model=PredictionResponseDTO)
-def predict(request: PredictionRequestDTO) -> PredictionResponseDTO:
-    """Endpoint principal de inferencia ejecutando el modelo real."""
-    if "predictor" not in model_cache:
-        raise HTTPException(status_code=503, detail="Modelo no cargado en el servidor")
-
-    # 1. Extraer los datos del request
-    # scikit-learn espera un formato tabular (DataFrame) de 2D
-    data = pd.DataFrame([request.features])
-
-    try:
-        # 2. Hacer la predicción con el modelo de MLflow
-        model = model_cache["predictor"]
-        prediction = model.predict(data)
-
-        # 3. Formatear la respuesta
+    if not model:
+        # Simulando si todavia no hay modelo entrenado en MinIO
         return PredictionResponseDTO(
-            prediction=int(prediction[0]), model_version=model_cache["version"]
+            use_case=use_case,
+            prediction=-1,
+            model_version="none",
+            is_anomaly=bool(is_anomaly)
         )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error en inferencia: {str(e)}")
 
+    import pandas as pd
+    df_features = pd.DataFrame([payload.features])
+    prediction = model.predict(df_features)[0]
 
-@app.post("/train")
-def train_models(request: TrainRequestDTO) -> dict[str, Any]:
-    """Endpoint MLOps: Recibe un dataset, entrena modelos en MLflow y promueve el mejor."""
-    try:
-        if not os.path.exists(request.dataset_path):
-            raise HTTPException(status_code=400, detail=f"Dataset no encontrado en la ruta: {request.dataset_path}")
-            
-        orchestrator = AutoMLOrchestrator(
-            tracking_uri="http://localhost:5000",
-            s3_endpoint="http://localhost:9000"
-        )
-        
-        result = orchestrator.run_automl(
-            dataset_path=request.dataset_path,
-            target_col=request.target_column,
-            experiment_name=request.experiment_name,
-            registered_model_name=request.model_name
-        )
-        
-        # Opcional: Podríamos recargar el modelo en la API dinámicamente luego de entrenar.
-        print("Recargando modelo en caché desde el champion recién promocionado...")
-        model_uri = f"models:/{request.model_name}@champion"
-        loaded_model = mlflow.pyfunc.load_model(model_uri)
-        model_cache["predictor"] = loaded_model
-        model_cache["version"] = result["model_version"]
-                
-        return {"status": "success", "automl_result": result}
-        
-    except ValueError as val_err:
-        raise HTTPException(status_code=400, detail=str(val_err))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en AutoML orchestrator: {str(e)}")
+    return PredictionResponseDTO(
+        use_case=use_case,
+        prediction=int(prediction),
+        model_version="champion",
+        is_anomaly=bool(is_anomaly)
+    )
 
+@app.post("/ingest/{use_case}")
+async def ingest_continuo(use_case: str, payload: IngestionDTO, background_tasks: BackgroundTasks):
+    is_anomaly = anomaly_detector.detect_anomaly(use_case, payload.features)
+    
+    row_data = payload.features.copy()
+    if payload.target is not None:
+        row_data['target'] = payload.target
+    row_data['is_anomaly'] = is_anomaly
+    
+    background_tasks.add_task(orchestrator.process_streaming_data, use_case, row_data)
+    return {"status": "Ingested", "use_case": use_case, "anomaly_flagged": bool(is_anomaly)}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "cached_models": list(model_cache.keys())}
