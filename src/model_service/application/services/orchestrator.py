@@ -1,9 +1,11 @@
 import os
+from threading import Lock
 from typing import Any, Dict
 
 import mlflow
 import mlflow.sklearn
 import pandas as pd
+from mlflow.exceptions import MlflowException
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -18,41 +20,95 @@ class MultiTenantAutoMLOrchestrator:
     def __init__(self) -> None:
         # Conectar al contenedor MLflow real
         mlflow.set_tracking_uri("http://localhost:5000")
+        self._locks: Dict[str, Lock] = {}
+        self._locks_guard = Lock()
+
+    def _get_use_case_lock(self, use_case: str) -> Lock:
+        with self._locks_guard:
+            if use_case not in self._locks:
+                self._locks[use_case] = Lock()
+            return self._locks[use_case]
 
     def process_streaming_data(self, use_case: str, raw_data: Dict[str, Any]) -> None:
-        base_path = f"data/raw/streaming/{use_case}"
-        os.makedirs(base_path, exist_ok=True)
-        file_path = f"{base_path}/data.csv"
+        use_case_lock = self._get_use_case_lock(use_case)
+        with use_case_lock:
+            base_path = f"data/raw/streaming/{use_case}"
+            os.makedirs(base_path, exist_ok=True)
+            file_path = f"{base_path}/data.csv"
 
-        df_new = pd.DataFrame([raw_data])
-        df_new.to_csv(
-            file_path, mode="a", header=not os.path.exists(file_path), index=False
-        )
+            df_new = pd.DataFrame([raw_data])
+            df_new.to_csv(
+                file_path, mode="a", header=not os.path.exists(file_path), index=False
+            )
 
-        df_total = pd.read_csv(file_path)
-        # Reducimos umbral a 30 para demostracion rapida
-        if len(df_total) >= 30:
-            self._trigger_retraining(use_case, df_total, file_path)
+            df_total = pd.read_csv(file_path)
+            # Reducimos umbral a 30 para demostracion rapida
+            if len(df_total) >= 30:
+                try:
+                    self._trigger_retraining(use_case, df_total, file_path)
+                except Exception as exc:
+                    print(
+                        f"[MLOps] Error reentrenando '{use_case}': {exc}. "
+                        "Se conserva el lote para reintento."
+                    )
+
+    def _set_or_restore_experiment(
+        self, client: mlflow.tracking.MlflowClient, experiment_name: str
+    ) -> None:
+        experiment = client.get_experiment_by_name(experiment_name)
+        if experiment and experiment.lifecycle_stage == "deleted":
+            client.restore_experiment(experiment.experiment_id)
+
+        try:
+            mlflow.set_experiment(experiment_name)
+        except MlflowException as exc:
+            if "Cannot set a deleted experiment" not in str(exc):
+                raise
+
+            experiment = client.get_experiment_by_name(experiment_name)
+            if not experiment:
+                raise
+
+            client.restore_experiment(experiment.experiment_id)
+            mlflow.set_experiment(experiment_name)
 
     def _trigger_retraining(
         self, use_case: str, df: pd.DataFrame, file_path: str
     ) -> None:
-        mlflow.set_experiment(f"{use_case}_experiment")
         client = mlflow.tracking.MlflowClient()
+        experiment_name = f"{use_case}_experiment"
+        self._set_or_restore_experiment(client, experiment_name)
 
         if "target" not in df.columns:
+            return
+
+        # Si hubo escrituras concurrentes en el pasado, pueden quedar filas corruptas
+        # (por ejemplo, headers repetidos dentro del CSV). Convertimos todo a numerico
+        # y descartamos filas invalidas antes de entrenar.
+        X = df.drop(columns=["target", "is_anomaly"], errors="ignore")
+        y = pd.to_numeric(df["target"], errors="coerce")
+
+        X = X.apply(pd.to_numeric, errors="coerce")
+        valid_rows = y.notna()
+        X = X.loc[valid_rows]
+        y = y.loc[valid_rows]
+
+        X = X.dropna(axis=0)
+        y = y.loc[X.index]
+
+        if len(X) < 2:
+            print(
+                f"[MLOps] Se omite entrenamiento de {use_case}: "
+                "no hay suficientes filas validas despues de limpiar datos."
+            )
             return
 
         with mlflow.start_run(run_name=f"auto_retrain_{use_case}") as run:
             print("\n[MLOps] ----------------------------------------------------")
             print(
                 f"[MLOps] Entrenando modelo REAL para {use_case} "
-                f"con {len(df)} eventos..."
+                f"con {len(X)} eventos validos..."
             )
-
-            # Limpiar datos
-            X = df.drop(columns=["target", "is_anomaly"], errors="ignore")
-            y = df["target"]
 
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=0.2, random_state=42

@@ -16,6 +16,10 @@ mlflow.set_tracking_uri("http://localhost:5000")
 client = MlflowClient()
 
 USE_CASES = ["fraude_financiero", "abandono_clientes"]
+USE_CASE_FEATURES = {
+    "fraude_financiero": ["monto", "distancia_km", "hora_transaccion"],
+    "abandono_clientes": ["dias_inactivo", "tickets_soporte", "gasto_mensual"],
+}
 
 
 def run() -> None:
@@ -23,12 +27,12 @@ def run() -> None:
     for uc in USE_CASES:
         print(f"Para el caso {uc}...")
         for i in range(35):
+            features = {
+                name: random.random()
+                for name in USE_CASE_FEATURES.get(uc, ["a", "b", "c"])
+            }
             payload = {
-                "features": {
-                    "a": random.random(),
-                    "b": random.random(),
-                    "c": random.random(),
-                },
+                "features": features,
                 "target": 1,
             }
             try:
