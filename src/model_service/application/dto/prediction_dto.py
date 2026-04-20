@@ -1,15 +1,19 @@
+from typing import Any, Dict
+
 from pydantic import BaseModel, ConfigDict
-from typing import Dict, Any, Optional
+
 
 class PredictionRequestDTO(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
     features: Dict[str, Any]
+
 
 class PredictionResponseDTO(BaseModel):
     use_case: str
     prediction: Any
     model_version: str
     is_anomaly: bool = False
+
 
 class IngestionDTO(BaseModel):
     features: Dict[str, Any]

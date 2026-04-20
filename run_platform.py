@@ -5,15 +5,21 @@ import time
 import webbrowser
 
 
-def start_api():
+def start_api() -> None:
     print("[API] Iniciando Uvicorn en background...", flush=True)
     # Ejecutamos con el entorno virtual para asegurarnos de que encuentre todo
-    cmd = "powershell -Command \"& .\\.venv\\Scripts\\Activate.ps1 ; $env:PYTHONPATH='.' ; uvicorn src.model_service.infrastructure.entrypoints.api:app --host 0.0.0.0 --port 8000\""
+    cmd = (
+        "powershell -Command "
+        '"& .\\.venv\\Scripts\\Activate.ps1 ; '
+        "$env:PYTHONPATH='.' ; "
+        "uvicorn src.model_service.infrastructure.entrypoints.api:app "
+        '--host 0.0.0.0 --port 8000"'
+    )
     # Subproceso bloqueante para el hilo
     subprocess.run(cmd, shell=True)
 
 
-def main():
+def main() -> None:
     print("====================================")
     print("=== MLOps Platform Runner (E2E)  ===")
     print("====================================")
@@ -37,7 +43,8 @@ def main():
     print("🌐 FastAPI Docs (Swagger): http://localhost:8000/docs")
     print("📊 MLflow UI (Métricas):   http://localhost:5000")
     print(
-        "🗄️  MinIO (Artefactos):    http://localhost:9001 (user: minio_user / pass: minio_password)"
+        "🗄️  MinIO (Artefactos):    http://localhost:9001 "
+        "(user: minio_user / pass: minio_password)"
     )
     print("------------------------------------------------")
 
@@ -52,14 +59,17 @@ def main():
     print("🚀 PARA GENERAR MUESTRAS EN VIVO Y VERIFICAR MLFLOW:")
     print("Abre *OTRA* terminal e ingresa uno de los siguientes comandos:")
     print(
-        "  python scripts/e2e_demo_mlflow.py           -> Corre 35 ejemplos de golpe y fuerza entrenamiento"
+        "  python scripts/e2e_demo_mlflow.py "
+        "-> Corre 35 ejemplos de golpe y fuerza entrenamiento"
     )
     print(
-        "  python scripts/simulate_multi_streaming.py    -> Ingesta data gota a gota como eventos web"
+        "  python scripts/simulate_multi_streaming.py "
+        "-> Ingesta data gota a gota como eventos web"
     )
 
     print(
-        "\nPresiona CTRL+C en cualquier momento para detener el servidor API y Salir...\n"
+        "\nPresiona CTRL+C en cualquier momento para detener "
+        "el servidor API y Salir...\n"
     )
     try:
         while True:
@@ -73,7 +83,7 @@ def main():
                 print("Ejecutando docker-compose down...")
                 subprocess.run("docker-compose down", shell=True)
                 print("Contenedores detenidos.")
-        except:
+        except Exception:
             pass
         print("¡Hasta luego!")
         sys.exit(0)

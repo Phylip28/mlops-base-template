@@ -2,8 +2,8 @@ import os
 
 import mlflow
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 
 # Configurar credenciales para conectar MLflow con MinIO
 os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://localhost:9000"
@@ -24,8 +24,10 @@ def run_training() -> None:
         df = pd.read_csv("data/raw/balanced_binary_dataset.csv")
         X = df.drop(columns=["target"])
         y = df["target"]
-        
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
 
         print("Entrenando modelo...")
         # Entrenar un modelo básico
@@ -43,7 +45,11 @@ def run_training() -> None:
         mlflow.sklearn.log_model(
             sk_model=clf, artifact_path="model", registered_model_name="GenericModel"
         )
-        print(f"¡Modelo entrenado y registrado en MLflow con éxito! Exactitud: {accuracy:.4f}")
+        summary = (
+            "¡Modelo entrenado y registrado en MLflow con éxito! "
+            f"Exactitud: {accuracy:.4f}"
+        )
+        print(summary)
 
 
 if __name__ == "__main__":

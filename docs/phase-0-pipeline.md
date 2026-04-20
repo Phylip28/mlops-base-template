@@ -6,7 +6,7 @@ Este documento describe el flujo automatizado actual del pipeline MLOps para la 
 
 ## ⚙️ ¿Qué realiza el programa?
 
-1. **Generación de Datos (generate_data.py):** 
+1. **Generación de Datos (generate_data.py):**
    Crea de manera sintética (usando `scikit-learn`) datasets balanceados para resolver problemas de clasificación. Los archivos resultantes se guardan de forma física en la ruta `data/raw/`.
    - `balanced_binary_dataset.csv` (1000 registros, 12 variables).
    - `balanced_multiclass_dataset.csv` (1500 registros, 15 variables).
