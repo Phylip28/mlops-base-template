@@ -1,8 +1,15 @@
 from typing import Dict
 
 import pandas as pd
+from prometheus_client import Counter
 from sklearn.ensemble import IsolationForest
 from sklearn.exceptions import NotFittedError
+
+ANOMALIES_DETECTED = Counter(
+    "anomalies_detected_total",
+    "Total anomaly detections",
+    ["use_case"],
+)
 
 
 class AnomalyDetectionService:
@@ -20,7 +27,12 @@ class AnomalyDetectionService:
 
         try:
             prediction = model.predict(df)
-            return bool(prediction[0] == -1)
+            is_anomaly = bool(prediction[0] == -1)
         except NotFittedError:
             model.fit(df)
-            return False
+            is_anomaly = False
+
+        if is_anomaly:
+            ANOMALIES_DETECTED.labels(use_case=use_case).inc()
+
+        return is_anomaly

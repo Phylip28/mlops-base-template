@@ -6,9 +6,21 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from mlflow.exceptions import MlflowException
+from prometheus_client import Counter, Gauge
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
+
+RETRAIN_TRIGGERS = Counter(
+    "retrain_triggers_total",
+    "Total retraining triggers",
+    ["use_case", "status"],
+)
+RETRAIN_ACCURACY = Gauge(
+    "retrain_accuracy",
+    "Accuracy of last retraining",
+    ["use_case"],
+)
 
 # Variables de entorno para conectar con MinIO y MLflow Server de Docker
 os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://localhost:9000"
@@ -82,9 +94,6 @@ class MultiTenantAutoMLOrchestrator:
         if "target" not in df.columns:
             return
 
-        # Si hubo escrituras concurrentes en el pasado, pueden quedar filas corruptas
-        # (por ejemplo, headers repetidos dentro del CSV). Convertimos todo a numerico
-        # y descartamos filas invalidas antes de entrenar.
         X = df.drop(columns=["target", "is_anomaly"], errors="ignore")
         y = pd.to_numeric(df["target"], errors="coerce")
 
@@ -103,55 +112,59 @@ class MultiTenantAutoMLOrchestrator:
             )
             return
 
-        with mlflow.start_run(run_name=f"auto_retrain_{use_case}") as run:
-            print("\n[MLOps] ----------------------------------------------------")
-            print(
-                f"[MLOps] Entrenando modelo REAL para {use_case} "
-                f"con {len(X)} eventos validos..."
-            )
+        try:
+            with mlflow.start_run(run_name=f"auto_retrain_{use_case}") as run:
+                print("\n[MLOps] ----------------------------------------------------")
+                print(
+                    f"[MLOps] Entrenando modelo REAL para {use_case} "
+                    f"con {len(X)} eventos validos..."
+                )
 
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=0.2, random_state=42
-            )
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y, test_size=0.2, random_state=42
+                )
 
-            # Entrenar
-            model = RandomForestClassifier(n_estimators=10, random_state=42)
-            model.fit(X_train, y_train)
+                model = RandomForestClassifier(n_estimators=10, random_state=42)
+                model.fit(X_train, y_train)
 
-            # Evaluar
-            preds = model.predict(X_test)
-            acc = accuracy_score(y_test, preds)
+                preds = model.predict(X_test)
+                acc = accuracy_score(y_test, preds)
+                RETRAIN_ACCURACY.labels(use_case=use_case).set(acc)
 
-            # Loguear Metric y Model a MinIO
-            mlflow.log_metric("accuracy", acc)
-            model_name = f"{use_case}_model"
+                mlflow.log_metric("accuracy", acc)
+                model_name = f"{use_case}_model"
 
-            print("[MLOps] Subiendo artefactos a MinIO / S3...")
-            mlflow.sklearn.log_model(
-                model, "model_artifact", registered_model_name=model_name
-            )
+                print("[MLOps] Subiendo artefactos a MinIO / S3...")
+                mlflow.sklearn.log_model(
+                    model, "model_artifact", registered_model_name=model_name
+                )
 
-            # Obtener ultima version para promoverla
-            latest_version = client.get_latest_versions(model_name, stages=["None"])[
-                0
-            ].version
-            client.set_registered_model_alias(model_name, "champion", latest_version)
+                latest_version = client.get_latest_versions(
+                    model_name, stages=["None"]
+                )[0].version
+                client.set_registered_model_alias(
+                    model_name, "champion", latest_version
+                )
 
-            print(
-                f"[MLOps] Modelo '{model_name}' (v{latest_version}) "
-                "guardado en MinIO y MLflow!"
-            )
-            print(f"[MLOps] Exactitud (Accuracy) obtenida: {acc:.2f}")
-            print("[MLOps] ----------------------------------------------------\n")
+                print(
+                    f"[MLOps] Modelo '{model_name}' (v{latest_version}) "
+                    "guardado en MinIO y MLflow!"
+                )
+                print(f"[MLOps] Exactitud (Accuracy) obtenida: {acc:.2f}")
+                print("[MLOps] ----------------------------------------------------\n")
 
-            # Archivar el lote usado
-            archive_path = file_path.replace(
-                "data.csv", f"data_archived_{run.info.run_id}.csv"
-            )
-            try:
-                if os.path.exists(archive_path):
-                    os.remove(archive_path)
-                if os.path.exists(file_path):
-                    os.rename(file_path, archive_path)
-            except Exception as e:
-                print(f"[MLOps] Ignorando error archivar: {e}")
+                archive_path = file_path.replace(
+                    "data.csv", f"data_archived_{run.info.run_id}.csv"
+                )
+                try:
+                    if os.path.exists(archive_path):
+                        os.remove(archive_path)
+                    if os.path.exists(file_path):
+                        os.rename(file_path, archive_path)
+                except Exception as e:
+                    print(f"[MLOps] Ignorando error archivar: {e}")
+
+                RETRAIN_TRIGGERS.labels(use_case=use_case, status="success").inc()
+        except Exception:
+            RETRAIN_TRIGGERS.labels(use_case=use_case, status="failure").inc()
+            raise
