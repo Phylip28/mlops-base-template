@@ -548,6 +548,15 @@ def check_prometheus_scrape() -> tuple[bool, str]:
         return False, str(e)
 
 
+def _get_docker_compose_cmd() -> list[str]:
+    import shutil
+    if shutil.which("docker-compose"):
+        return ["docker-compose"]
+    if shutil.which("docker"):
+        return ["docker", "compose"]
+    raise RuntimeError("Docker Compose no encontrado en este sistema")
+
+
 SERVICES = [
     ("postgres", "PostgreSQL", 5432),
     ("mlops_minio", "MinIO", 9000),
@@ -724,7 +733,8 @@ def section3_content():
         if st.button("▶  Start", key="btn_docker_start", use_container_width=True):
             with st.spinner("Starting containers..."):
                 try:
-                    subprocess.run("docker-compose up -d", shell=True, check=True)
+                    cmd = _get_docker_compose_cmd() + ["up", "-d"]
+                    subprocess.run(cmd, check=True)
                     log_event("DOCKER", "Containers started", "info")
                     st.rerun()
                 except Exception as e:
@@ -735,19 +745,27 @@ def section3_content():
         st.markdown('<div class="btn-secondary">', unsafe_allow_html=True)
         if st.button("■  Stop", key="btn_docker_stop", use_container_width=True):
             with st.spinner("Stopping containers..."):
-                subprocess.run("docker-compose down", shell=True)
-                log_event("DOCKER", "Containers stopped", "info")
-                st.rerun()
+                try:
+                    cmd = _get_docker_compose_cmd() + ["down"]
+                    subprocess.run(cmd, check=True)
+                    log_event("DOCKER", "Containers stopped", "info")
+                    st.rerun()
+                except Exception as e:
+                    log_event("DOCKER", f"Stop failed: {e}", "error")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with c3:
         st.markdown('<div class="btn-accent">', unsafe_allow_html=True)
         if st.button("↺  Restart", key="btn_docker_restart", use_container_width=True):
             with st.spinner("Restarting..."):
-                subprocess.run(["docker-compose", "down"], shell=True)
-                subprocess.run(["docker-compose", "up", "-d"], shell=True)
-                log_event("DOCKER", "Containers restarted", "info")
-                st.rerun()
+                try:
+                    dc = _get_docker_compose_cmd()
+                    subprocess.run(dc + ["down"], check=True)
+                    subprocess.run(dc + ["up", "-d"], check=True)
+                    log_event("DOCKER", "Containers restarted", "info")
+                    st.rerun()
+                except Exception as e:
+                    log_event("DOCKER", f"Restart failed: {e}", "error")
         st.markdown("</div>", unsafe_allow_html=True)
 
 
