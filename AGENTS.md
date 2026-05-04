@@ -21,11 +21,14 @@
 
 ```bash
 # Infrastructure (Docker Compose)
-docker-compose up -d          # Start: Postgres, MinIO, MLflow
+docker-compose up -d          # Start: Postgres, MinIO, MLflow, Prometheus, Grafana
 docker-compose down           # Stop
 
 # API (run from repo root)
 uvicorn src.model_service.infrastructure.entrypoints.api:app --host 0.0.0.0 --port 8000
+
+# Control dashboard (Streamlit UI)
+uv run streamlit run run_streamlit_app.py --server.port 8502
 
 # E2E runner (auto-starts infra + API; Windows/PowerShell preferred)
 python run_platform.py
@@ -60,3 +63,4 @@ pre-commit run --all-files
 - **Retrain threshold is 30 samples** (demo mode in `orchestrator.py`). Real deployments may need different values.
 - **CSV corruption under concurrency**: orchestrator cleans invalid rows before training (`pd.to_numeric` + dropna). This is intentional.
 - **Phase 0 pipeline** uses SMOTE for class imbalance and KS-test for data drift — these are in `experiments/baselines/`, not part of the Phase 1 streaming stack.
+- **Streamlit control dashboard**: requires `psutil` and `streamlit` in dependencies (`pyproject.toml`). Run with `uv run streamlit run run_streamlit_app.py --server.port 8502`. Dashboard design documented in `docs/ui-spec-command-center.md`.
