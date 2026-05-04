@@ -15,8 +15,8 @@ Muestras enviadas, esperando BackgroundTasks de FastAPI (15s)...
 
 ========= METRICAS MLFLOW ============
 ✅ fraude_financiero entrenado. Accuracy = 1.0
-   Modelo subido a MinIO: models:/m-520ca4c549c7467d99043589b3b2905f
-   Version Alias 'champion': v14
+   Modelo subido a MinIO: models:/m-944d6600ab184115a9de30d491bc02bb
+   Version Alias 'champion': v19
 ✅ abandono_clientes entrenado. Accuracy = 1.0
-   Modelo subido a MinIO: models:/m-cd08fea55366478299f4c3ab724449e7
-   Version Alias 'champion': v20
+   Modelo subido a MinIO: models:/m-eddf45fa44024ee7ab2e994f82f38f65
+   Version Alias 'champion': v25

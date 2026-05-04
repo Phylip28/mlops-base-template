@@ -30,6 +30,11 @@ uvicorn src.model_service.infrastructure.entrypoints.api:app --host 0.0.0.0 --po
 # Control dashboard (Streamlit UI)
 uv run streamlit run run_streamlit_app.py --server.port 8502
 
+# Prediction UI (FastAPI, port 8001 — separate service)
+cd services/prediction-ui && uvicorn src.app:app --host 0.0.0.0 --port 8001
+# or via Docker:
+docker-compose up -d prediction-ui
+
 # E2E runner (auto-starts infra + API; Windows/PowerShell preferred)
 python run_platform.py
 
@@ -39,8 +44,8 @@ python scripts/e2e_demo_mlflow.py             # fast-forward: 35 samples → tri
 
 # Quality (root of repo)
 pytest tests/
-ruff check src/
-ruff format src/
+ruff check src/ services/prediction-ui/
+ruff format src/ services/prediction-ui/
 mypy src/
 
 # Pre-commit hooks

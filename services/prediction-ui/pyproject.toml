@@ -1,0 +1,15 @@
+[project]
+name = "prediction-ui"
+version = "0.1.0"
+description = "MLOps Prediction UI — FastAPI + vanilla HTML/JS"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.3.4",
+    "mypy>=1.9.0",
+]
