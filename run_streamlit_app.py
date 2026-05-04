@@ -466,6 +466,22 @@ def check_docker_service(name: str) -> bool:
         return False
 
 
+def check_prometheus_scrape() -> tuple[bool, str]:
+    try:
+        import urllib.request
+        url = "http://localhost:9090/api/v1/targets"
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            data = resp.read()
+        import json
+        targets = json.loads(data)
+        for t in targets.get("data", {}).get("activeTargets", []):
+            if "mlops-api" in t.get("labels", {}).get("job", ""):
+                return t.get("health") == "up", t.get("lastError", "ok")
+        return False, "target not found"
+    except Exception as e:
+        return False, str(e)
+
+
 SERVICES = [
     ("postgres",        "PostgreSQL",  5432),
     ("mlops_minio",      "MinIO",       9000),
@@ -492,7 +508,8 @@ clock_str = now.strftime("%H:%M:%S")
 date_str  = now.strftime("%Y-%m-%d")
 
 svcs = refresh_services()
-all_up = all(v["running"] for v in svcs.values())
+prom_up, prom_err = check_prometheus_scrape()
+all_up = all(v["running"] for v in svcs.values()) and prom_up
 health_class = "health-ok" if all_up else "health-warn"
 health_label = "ALL SYSTEMS NOMINAL" if all_up else "DEGRADED MODE"
 
@@ -510,6 +527,7 @@ with col_hero_left:
     """, unsafe_allow_html=True)
 
 with col_hero_right:
+    prom_status = "SCRAPE OK" if prom_up else f"ERR: {prom_err[:30]}"
     st.markdown(f"""
     <div class="hero" style="text-align:right;">
         <div class="hero-clock">{clock_str}</div>
@@ -518,6 +536,12 @@ with col_hero_right:
             <span class="health-dot"></span>
             {health_label}
         </div>
+        <div style="
+            margin-top:6px;
+            font-family:'JetBrains Mono',monospace;
+            font-size:10px;
+            color:var(--text-muted);
+        ">Prometheus: {prom_status}</div>
     </div>
     """, unsafe_allow_html=True)
 

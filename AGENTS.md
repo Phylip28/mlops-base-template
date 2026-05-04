@@ -64,3 +64,4 @@ pre-commit run --all-files
 - **CSV corruption under concurrency**: orchestrator cleans invalid rows before training (`pd.to_numeric` + dropna). This is intentional.
 - **Phase 0 pipeline** uses SMOTE for class imbalance and KS-test for data drift — these are in `experiments/baselines/`, not part of the Phase 1 streaming stack.
 - **Streamlit control dashboard**: requires `psutil` and `streamlit` in dependencies (`pyproject.toml`). Run with `uv run streamlit run run_streamlit_app.py --server.port 8502`. Dashboard design documented in `docs/ui-spec-command-center.md`.
+- **Prometheus `host.docker.internal` on Linux**: `host.docker.internal` does not resolve on Linux (Docker Desktop feature only). Use IP `172.17.0.1` in `prometheus.yml` targets. The gateway is `172.17.0.1` for the default bridge; for `mlops-base-template_default` network use `172.23.0.1`.
