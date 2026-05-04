@@ -1,13 +1,17 @@
-import streamlit as st
-import subprocess
-import webbrowser
-import threading
-import sys
-import psutil
 import os
+import subprocess
+import sys
 import time
+import webbrowser
 
-st.set_page_config(page_title="Centro de Operaciones MLOps", layout="wide", page_icon="🚀")
+import psutil
+import streamlit as st
+
+st.set_page_config(
+    page_title="Centro de Operaciones MLOps",
+    layout="wide",
+    page_icon="🚀",
+)
 
 # --- UI Header ---
 st.title("🚀 MLOps Platform Runner (E2E)")
@@ -26,15 +30,18 @@ def get_state():
 state = get_state()
 
 def is_port_in_use(port: int) -> bool:
-    for conn in psutil.net_connections():
-        if conn.laddr.port == port:
-            return True
-    return False
+    try:
+        for conn in psutil.net_connections():
+            if conn.laddr.port == port:
+                return True
+        return False
+    except Exception:
+        return False
 
 def open_url(url: str):
     try:
         webbrowser.open(url)
-    except:
+    except Exception:
         pass
 
 # --- 1. Docker Compose ---
@@ -42,7 +49,11 @@ st.header("1. Infraestructura Base")
 col1, col2, col3 = st.columns([1,1,1])
 
 with col1:
-    if st.button("Levantar Contenedores Docker", use_container_width=True, type="primary"):
+    if st.button(
+        "Levantar Contenedores Docker",
+        use_container_width=True,
+        type="primary",
+    ):
         with st.spinner("Iniciando MLflow, MinIO, Grafana..."):
             try:
                 subprocess.run("docker-compose up -d", shell=True, check=True)
@@ -68,8 +79,11 @@ with col3:
 st.header("2. Backend API (FastAPI)")
 c1, c2, _ = st.columns([1,1,2])
 
-api_status = "🟢 ONLINE" if is_port_in_use(8000) else "🔴 OFFLINE"
-st.write(f"Estado de la API:** {api_status}")
+api_status_placeholder = st.empty()
+if is_port_in_use(8000):
+    api_status_placeholder.write("Estado de la API:** 🟢 ONLINE")
+else:
+    api_status_placeholder.write("Estado de la API:** 🔴 OFFLINE")
 
 with c1:
     if st.button("Iniciar API Backend", use_container_width=True, type="primary"):
@@ -77,7 +91,21 @@ with c1:
             st.warning("El puerto 8000 ya está en uso. Detenla primero.")
         else:
             venv_python = os.path.join(".venv", "Scripts", "python.exe")
-            cmd = [venv_python, "-m", "uvicorn", "src.model_service.infrastructure.entrypoints.api:app", "--host", "0.0.0.0", "--port", "8000"]
+            if not os.path.exists(venv_python):
+                venv_python = sys.executable
+            api_entrypoint = (
+            "src.model_service.infrastructure.entrypoints.api:app"
+        )
+            cmd = [
+                venv_python,
+                "-m",
+                "uvicorn",
+                api_entrypoint,
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+            ]
             try:
                 state["api_process"] = subprocess.Popen(cmd)
                 st.success("API iniciada en background.")
@@ -96,7 +124,7 @@ with c2:
                 try:
                     if 'uvicorn' in proc.info.get('cmdline', []):
                         proc.kill()
-                except:
+                except Exception:
                     pass
         st.info("API Detenida.")
         time.sleep(2)
@@ -112,16 +140,28 @@ with sc1:
     st.info("⚡ Ráfaga Batch (35 Ejemplos)")
     if st.button("Ejecutar e2e_demo_mlflow", use_container_width=True):
         venv_python = os.path.join(".venv", "Scripts", "python.exe")
+        if not os.path.exists(venv_python):
+            venv_python = sys.executable
         log_file = open("e2e_demo.log", "w", encoding="utf-8")
-        subprocess.Popen([venv_python, "scripts/e2e_demo_mlflow.py"], stdout=log_file, stderr=subprocess.STDOUT)
+        subprocess.Popen(
+            [venv_python, "scripts/e2e_demo_mlflow.py"],
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+        )
         st.success("Ráfaga enviada. Revisa e2e_demo.log")
 
 with sc2:
     st.info("💧 Simulación Streaming Fluida")
     if st.button("Iniciar Streaming", use_container_width=True):
         venv_python = os.path.join(".venv", "Scripts", "python.exe")
+        if not os.path.exists(venv_python):
+            venv_python = sys.executable
         log_file = open("streaming.log", "w", encoding="utf-8")
-        state["sim_process"] = subprocess.Popen([venv_python, "scripts/simulate_multi_streaming.py"], stdout=log_file, stderr=subprocess.STDOUT)
+        state["sim_process"] = subprocess.Popen(
+            [venv_python, "scripts/simulate_multi_streaming.py"],
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+        )
         st.success("Streaming Iniciado. Revisa streaming.log")
 
 with sc3:
@@ -134,9 +174,10 @@ with sc3:
         else:
             for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                 try: # Mato cualquier rastro del script
-                    if 'simulate_multi_streaming.py' in " ".join(proc.info.get('cmdline', []) or []):
+                    cmdline_str = " ".join(proc.info.get("cmdline") or [])
+                    if "simulate_multi_streaming.py" in cmdline_str:
                         proc.kill()
-                except:
+                except Exception:
                     pass
             st.info("Procesos de streaming terminados.")
 
@@ -147,12 +188,32 @@ st.header("4. Observabilidad y Dashboards")
 link1, link2, link3, link4 = st.columns(4)
 
 with link1:
-    st.button("📊 Abrir Grafana\n(Métricas MLOps en Vivo)", on_click=open_url, args=("http://localhost:3000",), use_container_width=True)
+    st.button(
+        "📊 Abrir Grafana\n(Métricas MLOps en Vivo)",
+        on_click=open_url,
+        args=("http://localhost:3000",),
+        use_container_width=True,
+    )
     st.caption("User: `admin` | Pass: `admin`")
 with link2:
-    st.button("📈 Abrir MLflow\n(Historial de Modelos)", on_click=open_url, args=("http://localhost:5000",), use_container_width=True)
+    st.button(
+        "📈 Abrir MLflow\n(Historial de Modelos)",
+        on_click=open_url,
+        args=("http://localhost:5000",),
+        use_container_width=True,
+    )
 with link3:
-    st.button("🗄️ Abrir MinIO\n(Artefactos .pkl)", on_click=open_url, args=("http://localhost:9001",), use_container_width=True)
+    st.button(
+        "🗄️ Abrir MinIO\n(Artefactos .pkl)",
+        on_click=open_url,
+        args=("http://localhost:9001",),
+        use_container_width=True,
+    )
     st.caption("User: `minio_user` | Pass: `minio_password`")
 with link4:
-    st.button("🌐 Abrir FastAPI Docs\n(Swagger UI)", on_click=open_url, args=("http://localhost:8000/docs",), use_container_width=True)
+    st.button(
+        "🌐 Abrir FastAPI Docs\n(Swagger UI)",
+        on_click=open_url,
+        args=("http://localhost:8000/docs",),
+        use_container_width=True,
+    )

@@ -48,11 +48,6 @@ CACHED_MODELS = Gauge(
     "cached_models_count",
     "Number of models currently cached",
 )
-ANOMALIES_DETECTED = Counter(
-    "anomalies_total",
-    "Total anomalies detected",
-    ["use_case"]
-)
 
 model_cache: Dict[str, Any] = {}
 anomaly_detector = AnomalyDetectionService()
