@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Dict
 
 from fastapi import BackgroundTasks, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -83,6 +84,23 @@ def track_request(endpoint: str, method: str, status_code: int, latency: float) 
 
 
 app = FastAPI(title="Multi-Tenant MLOps API", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+        "http://localhost:8002",
+        "http://127.0.0.1:8002",
+        "http://localhost:8502",
+        "http://127.0.0.1:8502",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/predict/{use_case}", response_model=PredictionResponseDTO)
