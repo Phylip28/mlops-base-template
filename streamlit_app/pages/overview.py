@@ -165,7 +165,7 @@ def render() -> None:
     st.markdown("<div style='margin:24px 0 12px 0;'></div>", unsafe_allow_html=True)
     st.markdown(
         "<div style='font-family:Cabinet Grotesk,sans-serif; "
-        "font-size:12px; font-weight:600; color:#5f6b7a; "
+        "font-size:12px; font-weight:700; color:#5f6b7a; "
         "text-transform:uppercase; letter-spacing:1px; "
         "margin-bottom:12px;'>Service Status Timeline</div>",
         unsafe_allow_html=True,

@@ -213,6 +213,10 @@ canvas{{width:100%!important;height:100%!important;cursor:crosshair}}
     pollTimer = setInterval(poll, pollIntervalMs);
   }}
 
+  function startLoop() {{
+    pollTimer = setInterval(poll, pollIntervalMs);
+  }}
+
   document.getElementById('btn-refresh').addEventListener('click', handleRefresh);
   document.getElementById('sel-interval').addEventListener('change', function() {{ handleInterval(this.value); }});
 

@@ -1,6 +1,14 @@
 # ruff: noqa: E501
 CSS = """
 <style>
+/* ── Flash prevention — runs before anything else ── */
+html, body, .stApp, div[data-testid="stMain"], section.main, section.main > div, .main > div, .element-container {
+    background-color: #0f141a !important;
+}
+.stApp > * {
+    animation: none !important;
+}
+
 @import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800,500,600&f[]=satoshi@400,500,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 

@@ -27,31 +27,28 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ── Flash prevention — script runs before CSS loads ──
+st.markdown(
+    """
+    <script>
+    (function() {
+        document.documentElement.style.backgroundColor = '#0f141a';
+        if (document.body) document.body.style.backgroundColor = '#0f141a';
+        var observer = new MutationObserver(function() {
+            var main = document.querySelector('section[data-testid="stMain"]');
+            if (main) { main.style.backgroundColor = '#0f141a'; observer.disconnect(); }
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+    })();
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
 from streamlit_app.styles import CSS
 from streamlit_app.utils import log_event
 
 st.markdown(CSS, unsafe_allow_html=True)
-
-# ── Navigation flash prevention ──
-st.markdown(
-    """
-    <style>
-    /* Override Streamlit default white background at document level */
-    div[data-testid="stMain"] {
-        background-color: #0f141a !important;
-    }
-    /* Smooth fade transition for page content */
-    section.main > div {
-        animation: pageFadeIn 0.1s ease-out;
-    }
-    @keyframes pageFadeIn {
-        from { opacity: 0; transform: translateY(4px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 # ── Force sidebar always open ──
 st.markdown(
