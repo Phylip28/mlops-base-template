@@ -27,22 +27,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Flash prevention — injected BEFORE main CSS ──
-st.markdown(
-    """
-    <style>
-    html, body { background-color: #0f141a !important; }
-    div[data-testid="stAppViewContainer"] { background-color: #0f141a !important; }
-    section[data-testid="stMain"] { background-color: #0f141a !important; }
-    div[data-testid="stMain"] { background-color: #0f141a !important; }
-    section[data-testid="stSidebar"] { background-color: #16191f !important; }
-    div[data-testid="stSidebar"] { background-color: #16191f !important; }
-    .stApp { background-color: #0f141a !important; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 from streamlit_app.styles import CSS
 from streamlit_app.utils import log_event
 
