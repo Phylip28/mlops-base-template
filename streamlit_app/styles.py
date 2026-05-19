@@ -56,69 +56,47 @@ section[data-testid="stSidebar"] {
 section[data-testid="stSidebar"] > div:first-child {
     padding-top: 0 !important;
 }
-section[data-testid="stSidebar"] > div:first-child > div:first-child {
-    padding: 0 !important;
+
+/* hide Streamlit sidebar header (collapse button area) */
+div[data-testid="stSidebarHeader"] {
+    display: none !important;
 }
-section[data-testid="stSidebar"] .st-emotion-cache-16idsys p {
-    font-family: 'Satoshi', sans-serif !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    letter-spacing: 1.5px !important;
-    text-transform: uppercase !important;
-    color: var(--text-muted) !important;
-    padding: 20px 20px 8px !important;
+
+/* section labels: Monitor / Control / Access */
+.sidebar-section-label {
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 16px 12px 6px;
 }
-section[data-testid="stSidebar"] .st-emotion-cache-1aezh43 {
-    padding: 0 8px !important;
-    gap: 2px !important;
-}
-section[data-testid="stSidebar"] label {
+
+/* nav buttons in sidebar — style like nav items */
+section[data-testid="stSidebar"] .stButton > button {
     font-family: 'Satoshi', sans-serif !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     color: var(--text-body) !important;
-    padding: 10px 14px !important;
+    background: transparent !important;
+    border: none !important;
     border-radius: 8px !important;
+    padding: 10px 14px !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
     transition: all 0.15s ease !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
+    width: 100% !important;
+    height: auto !important;
+    box-shadow: none !important;
 }
-section[data-testid="stSidebar"] label:hover {
+section[data-testid="stSidebar"] .stButton > button:hover {
     background: var(--bg-surface) !important;
     color: var(--text-primary) !important;
+    border: none !important;
 }
-section[data-testid="stSidebar"] label[data-baseweb="radio"] {
-    padding-left: 14px !important;
-}
-section[data-testid="stSidebar"] div[role="radiogroup"] label {
-    background: transparent !important;
-}
-section[data-testid="stSidebar"] input:checked + div + label {
-    background: var(--accent-glow) !important;
-    color: var(--accent) !important;
-    box-shadow: inset 3px 0 0 var(--accent) !important;
-    font-weight: 600 !important;
-}
-section[data-testid="stSidebar"] .st-emotion-cache-1vixtbp {
-    font-family: 'Cabinet Grotesk', sans-serif !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    letter-spacing: 1.5px !important;
-    text-transform: uppercase !important;
-    color: var(--text-muted) !important;
-    padding: 20px 20px 8px !important;
-}
-section[data-testid="stSidebar"] hr {
-    border-color: var(--border) !important;
-    margin: 0 20px !important;
-}
-section[data-testid="stSidebar"] .st-emotion-cache-1rtdyuf {
-    display: flex !important;
-    flex-direction: column !important;
-}
-section[data-testid="stSidebar"] div[data-testid="stImage"] {
-    display: none !important;
+section[data-testid="stSidebar"] .stButton > button:focus {
+    box-shadow: none !important;
 }
 
 /* ── Custom Sidebar ── */

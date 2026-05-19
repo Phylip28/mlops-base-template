@@ -1,4 +1,6 @@
 # ruff: noqa: E402
+from collections.abc import Callable
+
 import streamlit as st
 
 st.set_page_config(
@@ -15,9 +17,12 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 if "activity_log" not in st.session_state:
     st.session_state.activity_log = []
+if "nav_page" not in st.session_state:
+    st.session_state.nav_page = "overview"
 
 log_event("SYS", "Dashboard initialized", "info")
 
+# ── Custom sidebar via st.sidebar ──
 with st.sidebar:
     st.markdown(
         """
@@ -32,42 +37,62 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-dashboard = st.Page(
-    "streamlit_app/pages/overview.py",
-    title="Overview",
-    default=True,
-)
-services = st.Page(
-    "streamlit_app/pages/services.py",
-    title="Services",
-)
-activity = st.Page(
-    "streamlit_app/pages/activity.py",
-    title="Activity",
-)
-docker = st.Page(
-    "streamlit_app/pages/docker.py",
-    title="Docker",
-)
-api_page = st.Page(
-    "streamlit_app/pages/api.py",
-    title="API",
-)
-traffic = st.Page(
-    "streamlit_app/pages/traffic.py",
-    title="Traffic",
-)
-links = st.Page(
-    "streamlit_app/pages/links.py",
-    title="Links",
-)
+    st.markdown(
+        '<div class="sidebar-section-label">Monitor</div>',
+        unsafe_allow_html=True,
+    )
+    if st.button("Overview", key="nav_overview", use_container_width=True):
+        st.session_state.nav_page = "overview"
+        st.rerun()
+    if st.button("Services", key="nav_services", use_container_width=True):
+        st.session_state.nav_page = "services"
+        st.rerun()
+    if st.button("Activity", key="nav_activity", use_container_width=True):
+        st.session_state.nav_page = "activity"
+        st.rerun()
 
-nav = st.navigation(
-    {
-        "Monitor": [dashboard, services, activity],
-        "Control": [docker, api_page, traffic],
-        "Access": [links],
-    }
-)
+    st.markdown(
+        '<div class="sidebar-section-label">Control</div>',
+        unsafe_allow_html=True,
+    )
+    if st.button("Docker", key="nav_docker", use_container_width=True):
+        st.session_state.nav_page = "docker"
+        st.rerun()
+    if st.button("API", key="nav_api", use_container_width=True):
+        st.session_state.nav_page = "api"
+        st.rerun()
+    if st.button("Traffic", key="nav_traffic", use_container_width=True):
+        st.session_state.nav_page = "traffic"
+        st.rerun()
 
-nav.run()
+    st.markdown(
+        '<div class="sidebar-section-label">Access</div>',
+        unsafe_allow_html=True,
+    )
+    if st.button("Links", key="nav_links", use_container_width=True):
+        st.session_state.nav_page = "links"
+        st.rerun()
+
+# ── Page routing ──
+page = st.session_state.nav_page
+
+from streamlit_app.pages.activity import render as activity_render
+from streamlit_app.pages.api import render as api_render
+from streamlit_app.pages.docker import render as docker_render
+from streamlit_app.pages.links import render as links_render
+from streamlit_app.pages.overview import render as overview_render
+from streamlit_app.pages.services import render as services_render
+from streamlit_app.pages.traffic import render as traffic_render
+
+renderers: dict[str, Callable[[], None]] = {
+    "overview": overview_render,
+    "services": services_render,
+    "activity": activity_render,
+    "docker": docker_render,
+    "api": api_render,
+    "traffic": traffic_render,
+    "links": links_render,
+}
+
+render_fn = renderers.get(page, overview_render)
+render_fn()
