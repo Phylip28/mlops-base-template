@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Literal, TypedDict
+from typing import TypedDict
 
 import streamlit as st
 
@@ -191,25 +191,14 @@ with st.sidebar:
             page_key = item["key"]
             page_label = item["label"]
             icon_svg = item["icon"]
-            btn_type: Literal["primary", "secondary"] = (
-                "primary" if page == page_key else "secondary"
+            active = " sidebar-nav-link--active" if page == page_key else ""
+            st.markdown(
+                f"""<a class="sidebar-nav-link{active}" href="?nav={page_key}" target="_self">
+                  <span class="sidebar-nav-icon">{icon_svg}</span>
+                  <span class="sidebar-nav-label">{page_label}</span>
+                </a>""",
+                unsafe_allow_html=True,
             )
-            cols = st.columns([0.14, 0.86], gap="small")
-            with cols[0]:
-                st.markdown(
-                    f'<div class="sidebar-nav-icon">{icon_svg}</div>',
-                    unsafe_allow_html=True,
-                )
-            with cols[1]:
-                if st.button(
-                    page_label,
-                    key=f"nav_{page_key}",
-                    type=btn_type,
-                    use_container_width=True,
-                ):
-                    st.session_state.nav_page = page_key
-                    st.query_params["nav"] = page_key
-                    st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
 
