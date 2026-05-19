@@ -1,46 +1,71 @@
-"""Overview page — real-time F1 telemetry dashboard."""
+"""Overview page — real-time F1 telemetry dashboard with rolling window."""
 
 from __future__ import annotations
 
 import random
+from collections import deque
 from datetime import datetime, timedelta
 from typing import Any
 
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
 
 from streamlit_app.utils import log_event
 
+WINDOW_SECONDS = 120
+MAX_POINTS = WINDOW_SECONDS
 
-def _generate_time_series(
-    minutes: int = 60,
-    base_value: float = 80.0,
-    variance: float = 15.0,
-    noise: float = 5.0,
-    spike_prob: float = 0.02,
-    spike_magnitude: float = 40.0,
-) -> pd.DataFrame:
+_SERIES_DEFAULTS: dict[str, dict[str, float]] = {
+    "uptime": {"base": 95, "variance": 8, "noise": 2, "spike": 0.03},
+    "latency": {"base": 45, "variance": 20, "noise": 5, "spike": 0.05},
+    "rps": {"base": 120, "variance": 30, "noise": 10, "spike": 0.04},
+    "errors": {"base": 2, "variance": 3, "noise": 1, "spike": 0.08},
+    "pg": {"base": 95, "variance": 5, "noise": 2, "spike": 0.02},
+    "fastapi": {"base": 98, "variance": 3, "noise": 1, "spike": 0.02},
+    "mlflow": {"base": 88, "variance": 12, "noise": 3, "spike": 0.04},
+}
+
+
+def _init_series(key: str) -> None:
+    """Pre-fill series with historical data so chart starts full."""
+    if key in st.session_state:
+        return
+    cfg = _SERIES_DEFAULTS[key]
     now = datetime.now()
-    timestamps = [now - timedelta(minutes=i) for i in range(minutes, 0, -1)]
-
-    values = []
-    current = base_value
-    for _ in range(minutes):
-        drift = (base_value - current) * 0.1
-        change = np.random.normal(drift, variance * 0.15)
-        current += change
-        if random.random() < spike_prob:
-            current += (
-                random.choice([-1, 1]) * spike_magnitude * random.random()
-            )
-        current += np.random.normal(0, noise)
+    ts: deque[datetime] = deque(maxlen=MAX_POINTS)
+    vals: deque[float] = deque(maxlen=MAX_POINTS)
+    current = cfg["base"]
+    for i in range(MAX_POINTS - 1, -1, -1):
+        t = now - timedelta(seconds=i)
+        drift = (cfg["base"] - current) * 0.1
+        current += np.random.normal(drift, cfg["variance"] * 0.15)
+        if random.random() < cfg["spike"]:
+            current += random.choice([-1, 1]) * 40 * random.random()
+        current += np.random.normal(0, cfg["noise"])
         current = max(0, min(100, current))
-        values.append(current)
+        ts.append(t)
+        vals.append(current)
+    st.session_state[key] = {
+        "timestamps": ts,
+        "values": vals,
+        "current": current,
+    }
 
-    return pd.DataFrame({"timestamp": timestamps, "value": values})
+
+def _tick(key: str) -> None:
+    """Append one data point via random walk + mean reversion."""
+    s = st.session_state[key]
+    cfg = _SERIES_DEFAULTS[key]
+    drift = (cfg["base"] - s["current"]) * 0.1
+    s["current"] += np.random.normal(drift, cfg["variance"] * 0.15)
+    if random.random() < cfg["spike"]:
+        s["current"] += random.choice([-1, 1]) * 40 * random.random()
+    s["current"] += np.random.normal(0, cfg["noise"])
+    s["current"] = max(0, min(100, s["current"]))
+    s["timestamps"].append(datetime.now())
+    s["values"].append(s["current"])
 
 
 def _hex_to_rgba(hex_color: str, alpha: float) -> str:
@@ -62,24 +87,28 @@ def _axis_base() -> dict[str, Any]:
             size=10,
             color="#5f6b7a",
         ),
-        tickformat="%H:%M",
+        tickformat="%H:%M:%S",
     )
 
 
 def _f1_line_chart(
-    df: pd.DataFrame,
+    key: str,
     title: str,
     color: str,
     y_label: str,
     y_range: tuple[float, float] | None = None,
     height: int = 260,
 ) -> go.Figure:
+    """Build chart from accumulated session_state series."""
+    s = st.session_state[key]
+    ts = list(s["timestamps"])
+    vs = list(s["values"])
     fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
-            x=df["timestamp"],
-            y=df["value"],
+            x=ts,
+            y=vs,
             mode="lines",
             line=dict(color=color, width=2),
             fill="tozeroy",
@@ -89,16 +118,17 @@ def _f1_line_chart(
         )
     )
 
-    fig.add_trace(
-        go.Scatter(
-            x=[df["timestamp"].iloc[-1]],
-            y=[df["value"].iloc[-1]],
-            mode="markers",
-            marker=dict(color=color, size=10, symbol="circle"),
-            showlegend=False,
-            hoverinfo="skip",
+    if vs:
+        fig.add_trace(
+            go.Scatter(
+                x=[ts[-1]],
+                y=[vs[-1]],
+                mode="markers",
+                marker=dict(color=color, size=10, symbol="circle"),
+                showlegend=False,
+                hoverinfo="skip",
+            )
         )
-    )
 
     fig.update_layout(
         title=dict(
@@ -118,7 +148,6 @@ def _f1_line_chart(
         showlegend=False,
         xaxis=dict(
             **_axis_base(),
-            range=[df["timestamp"].iloc[0], df["timestamp"].iloc[-1]],
         ),
         yaxis=dict(
             **_axis_base(),
@@ -135,50 +164,144 @@ def _f1_line_chart(
                 color="#d5dbdb",
             ),
         ),
+        uirevision="constant",
     )
 
     return fig
 
 
-def _static_timeline(
-    dfs: list[pd.DataFrame],
-    titles: list[str],
-    colors: list[str],
-    height: int = 520,
-) -> go.Figure:
+def render() -> None:
+    log_event("SYS", "Overview dashboard viewed", "info")
+
+    st.markdown(
+        """
+        <div class="page-header">
+            <div class="page-title">Overview</div>
+            <div class="page-subtitle">
+                Rolling-window telemetry — 1s updates
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    _render_telemetry()
+
+
+@st.fragment(run_every=1)
+def _render_telemetry() -> None:
+    """Fragment: updates every 1s, appends 1 data point, slides window."""
+
+    # Init all series on first run
+    for key in _SERIES_DEFAULTS:
+        _init_series(key)
+
+    # Tick one new data point for each series
+    for key in _SERIES_DEFAULTS:
+        _tick(key)
+
+    # ── Row 1: Uptime, Latency, RPS, Errors ──
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.plotly_chart(
+            _f1_line_chart(
+                "uptime",
+                "Platform Uptime",
+                "#00a1c9",
+                "UPTIME %",
+                (70, 105),
+            ),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
+
+    with col2:
+        st.plotly_chart(
+            _f1_line_chart(
+                "latency",
+                "API Latency",
+                "#ff9900",
+                "MS",
+                (0, 200),
+            ),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.plotly_chart(
+            _f1_line_chart(
+                "rps",
+                "Requests / Second",
+                "#44b9d6",
+                "RPS",
+                (0, 250),
+            ),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
+
+    with col2:
+        st.plotly_chart(
+            _f1_line_chart(
+                "errors",
+                "Error Rate",
+                "#d13212",
+                "ERR %",
+                (0, 25),
+            ),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
+
+    # ── Row 2: Multi-service timeline ──
+    st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='font-family:Cabinet Grotesk,sans-serif; "
+        "font-size:12px; font-weight:600; color:#5f6b7a; "
+        "text-transform:uppercase; letter-spacing:1px; "
+        "margin-bottom:12px;'>Service Status Timeline</div>",
+        unsafe_allow_html=True,
+    )
+
+    timeline_keys = ["pg", "fastapi", "mlflow"]
+    timeline_colors = ["#1d8102", "#00a1c9", "#ff9900"]
+    timeline_titles = ["PostgreSQL", "FastAPI", "MLflow"]
+
     fig = make_subplots(
         rows=3,
         cols=1,
         shared_xaxes=True,
         vertical_spacing=0.08,
         row_heights=[0.35, 0.35, 0.30],
-        subplot_titles=titles,
+        subplot_titles=timeline_titles,
     )
 
-    for i in range(3):
+    for i, (key, color) in enumerate(zip(timeline_keys, timeline_colors, strict=True)):
+        s = st.session_state[key]
         fig.add_trace(
             go.Scatter(
-                x=dfs[i]["timestamp"],
-                y=dfs[i]["value"],
+                x=list(s["timestamps"]),
+                y=list(s["values"]),
                 mode="lines",
-                line=dict(color=colors[i], width=1.5),
+                line=dict(color=color, width=1.5),
                 fill="tozeroy",
-                fillcolor=_hex_to_rgba(colors[i], 0.06),
+                fillcolor=_hex_to_rgba(color, 0.06),
                 hovertemplate="%{x|%H:%M:%S}<br>%{y:.1f}%<extra></extra>",
-                name=titles[i],
+                name=timeline_titles[i],
             ),
             row=i + 1,
             col=1,
         )
 
-    x_min = min(df["timestamp"].iloc[0] for df in dfs)
-    x_max = max(df["timestamp"].iloc[-1] for df in dfs)
-
     fig.update_layout(
         margin=dict(l=50, r=20, t=60, b=30),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        height=height,
+        height=520,
         showlegend=False,
         hovermode="x unified",
         hoverlabel=dict(
@@ -190,6 +313,7 @@ def _static_timeline(
                 color="#d5dbdb",
             ),
         ),
+        uirevision="constant",
     )
 
     for i in range(1, 4):
@@ -203,8 +327,7 @@ def _static_timeline(
                 size=9,
                 color="#5f6b7a",
             ),
-            tickformat="%H:%M",
-            range=[x_min, x_max],
+            tickformat="%H:%M:%S",
             row=i,
             col=1,
         )
@@ -230,133 +353,6 @@ def _static_timeline(
         annotation["x"] = 0
         annotation["xanchor"] = "left"
 
-    return fig
-
-
-def render() -> None:
-    log_event("SYS", "Overview dashboard viewed", "info")
-
-    st.markdown(
-        """
-        <div class="page-header">
-            <div class="page-title">Overview</div>
-            <div class="page-subtitle">
-                Real-time platform telemetry — auto-refresh 5s
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    _render_telemetry()
-
-
-@st.fragment(run_every=5)
-def _render_telemetry() -> None:
-    """Fragment: auto-refreshes charts every 5s without full page reload."""
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        df_uptime = _generate_time_series(
-            minutes=120, base_value=95, variance=8, noise=2, spike_prob=0.03
-        )
-        fig = _f1_line_chart(
-            df_uptime,
-            title="Platform Uptime",
-            color="#00a1c9",
-            y_label="UPTIME %",
-            y_range=(70, 105),
-        )
-        st.plotly_chart(
-            fig, use_container_width=True, config={"displayModeBar": False}
-        )
-
-    with col2:
-        df_latency = _generate_time_series(
-            minutes=120,
-            base_value=45,
-            variance=20,
-            noise=5,
-            spike_prob=0.05,
-            spike_magnitude=80,
-        )
-        fig = _f1_line_chart(
-            df_latency,
-            title="API Latency",
-            color="#ff9900",
-            y_label="MS",
-            y_range=(0, 200),
-        )
-        st.plotly_chart(
-            fig, use_container_width=True, config={"displayModeBar": False}
-        )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        df_rps = _generate_time_series(
-            minutes=120,
-            base_value=120,
-            variance=30,
-            noise=10,
-            spike_prob=0.04,
-        )
-        fig = _f1_line_chart(
-            df_rps,
-            title="Requests / Second",
-            color="#44b9d6",
-            y_label="RPS",
-            y_range=(0, 250),
-        )
-        st.plotly_chart(
-            fig, use_container_width=True, config={"displayModeBar": False}
-        )
-
-    with col2:
-        df_errors = _generate_time_series(
-            minutes=120,
-            base_value=2,
-            variance=3,
-            noise=1,
-            spike_prob=0.08,
-            spike_magnitude=15,
-        )
-        fig = _f1_line_chart(
-            df_errors,
-            title="Error Rate",
-            color="#d13212",
-            y_label="ERR %",
-            y_range=(0, 25),
-        )
-        st.plotly_chart(
-            fig, use_container_width=True, config={"displayModeBar": False}
-        )
-
-    st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
-    st.markdown(
-        "<div style='font-family:Cabinet Grotesk,sans-serif; "
-        "font-size:12px; font-weight:600; color:#5f6b7a; "
-        "text-transform:uppercase; letter-spacing:1px; "
-        "margin-bottom:12px;'>Service Status Timeline</div>",
-        unsafe_allow_html=True,
-    )
-
-    service_configs = [
-        ("PostgreSQL", "#1d8102", 95, 5),
-        ("FastAPI", "#00a1c9", 98, 3),
-        ("MLflow", "#ff9900", 88, 12),
-    ]
-    dfs = [
-        _generate_time_series(
-            minutes=120, base_value=base, variance=var, noise=2
-        )
-        for _name, _color, base, var in service_configs
-    ]
-    titles = [c[0] for c in service_configs]
-    colors = [c[1] for c in service_configs]
-
-    fig = _static_timeline(dfs, titles, colors)
     st.plotly_chart(
         fig, use_container_width=True, config={"displayModeBar": False}
     )
