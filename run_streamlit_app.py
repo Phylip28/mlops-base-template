@@ -7,16 +7,6 @@ st.set_page_config(
     page_icon="🛰️",
 )
 
-from streamlit_app.sections import (
-    render_api,
-    render_docker,
-    render_hero,
-    render_links,
-    render_log,
-    render_overview,
-    render_services,
-    render_traffic,
-)
 from streamlit_app.styles import CSS
 from streamlit_app.utils import log_event
 
@@ -27,36 +17,63 @@ if "activity_log" not in st.session_state:
 
 log_event("SYS", "Dashboard initialized", "info")
 
-
-from collections.abc import Callable
-
-
-def render_section(name: str, title: str, content_fn: Callable[[], None]) -> None:
+with st.sidebar:
     st.markdown(
-        f'<div class="section-block"><span class="section-title">{title}</span></div>',
+        """
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-title">
+            <span class="brand-dot"></span>
+            <span>MLOps</span>
+        </div>
+        <div class="sidebar-brand-sub">Command Center</div>
+    </div>
+    """,
         unsafe_allow_html=True,
     )
-    content_fn()
-    st.markdown('<div class="section-spacer"></div>', unsafe_allow_html=True)
 
-
-render_hero()
-
-render_section(
-    "system_overview",
-    "System Overview",
-    lambda: render_overview(len(st.session_state.activity_log)),
+dashboard = st.Page(
+    "streamlit_app/pages/overview.py",
+    title="Overview",
+    icon="📊",
+    default=True,
 )
-render_section("service_status", "Service Status", render_services)
-render_section("docker_infra", "Docker Infrastructure", render_docker)
-render_section("api_backend", "API Backend", render_api)
-render_section("traffic_gen", "Traffic Generators", render_traffic)
-render_section("activity_log", "Activity Log", render_log)
-render_section("quick_access", "Quick Access", render_links)
-
-st.markdown(
-    '<div class="footer">'
-    "MLOps Command Center // Multi-Tenant Fraud Detection // Stream Learning Platform"
-    "</div>",
-    unsafe_allow_html=True,
+services = st.Page(
+    "streamlit_app/pages/services.py",
+    title="Services",
+    icon="⚙️",
 )
+activity = st.Page(
+    "streamlit_app/pages/activity.py",
+    title="Activity",
+    icon="📋",
+)
+docker = st.Page(
+    "streamlit_app/pages/docker.py",
+    title="Docker",
+    icon="🐳",
+)
+api_page = st.Page(
+    "streamlit_app/pages/api.py",
+    title="API",
+    icon="🌐",
+)
+traffic = st.Page(
+    "streamlit_app/pages/traffic.py",
+    title="Traffic",
+    icon="📡",
+)
+links = st.Page(
+    "streamlit_app/pages/links.py",
+    title="Links",
+    icon="🔗",
+)
+
+nav = st.navigation(
+    {
+        "Monitor": [dashboard, services, activity],
+        "Control": [docker, api_page, traffic],
+        "Access": [links],
+    }
+)
+
+nav.run()
