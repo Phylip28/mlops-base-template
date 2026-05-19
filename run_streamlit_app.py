@@ -27,22 +27,69 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ── Flash prevention overlay — covers white before CSS loads ──
+st.markdown(
+    """
+    <style>
+    #flash-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #0f141a;
+        z-index: 99999;
+        transition: opacity 0.15s ease;
+        pointer-events: none;
+    }
+    #flash-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+    </style>
+    <div id="flash-overlay"></div>
+    <script>
+    (function() {
+        // Set dark background immediately on all elements
+        document.documentElement.style.backgroundColor = '#0f141a';
+        if (document.body) document.body.style.backgroundColor = '#0f141a';
+
+        // Inject CSS to override Streamlit defaults
+        var styleEl = document.createElement('style');
+        styleEl.textContent = 'html, body, .stApp, iframe, div[data-testid="stAppViewContainer"], section[data-testid="stMain"], div[data-testid="stMain"] { background-color: #0f141a !important; } section[data-testid="stSidebar"], div[data-testid="stSidebar"] { background-color: #16191f !important; }';
+        document.head.appendChild(styleEl);
+
+        // Remove overlay when Streamlit content is ready
+        function hideOverlay() {
+            var overlay = document.getElementById('flash-overlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
+        // Try to hide overlay as soon as main content appears
+        var observer = new MutationObserver(function(mutations) {
+            var main = document.querySelector('section[data-testid="stMain"]');
+            if (main && main.children.length > 0) {
+                hideOverlay();
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+
+        // Fallback: hide overlay after timeout
+        setTimeout(hideOverlay, 2000);
+    })();
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
 from streamlit_app.styles import CSS
 from streamlit_app.utils import log_event
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-# ── Force sidebar always open + flash prevention ──
+# ── Force sidebar always open ──
 st.markdown(
     """
     <script>
     (function() {
-        // Prevent white flash — set dark background immediately
-        document.documentElement.style.backgroundColor = '#0f141a';
-        var styleEl = document.createElement('style');
-        styleEl.textContent = 'html, body, .stApp, iframe { background-color: #0f141a !important; }';
-        document.head.appendChild(styleEl);
-
         function forceOpen() {
             var s = document.querySelector('section[data-testid="stSidebar"]');
             if (!s) return;
