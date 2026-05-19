@@ -1,7 +1,24 @@
-# ruff: noqa: E402
+# ruff: noqa: E402, E501
+"""MLOps Command Center — Streamlit entry point with redesigned sidebar."""
+
+from __future__ import annotations
+
 from collections.abc import Callable
+from typing import TypedDict
 
 import streamlit as st
+
+
+class _NavItem(TypedDict):
+    key: str
+    label: str
+    icon: str
+
+
+class _NavSection(TypedDict):
+    label: str
+    items: list[_NavItem]
+
 
 st.set_page_config(
     page_title="MLOps Command Center",
@@ -15,7 +32,7 @@ from streamlit_app.utils import log_event
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-# Nuclear JS: force sidebar open on Firefox / any browser
+# ── Force sidebar always open ──
 st.markdown(
     """
     <script>
@@ -68,9 +85,88 @@ if "activity_log" not in st.session_state:
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = "overview"
 
+# Sync from URL query param on initial load / refresh
+nav_qp = st.query_params.get("nav")
+if nav_qp and nav_qp in {
+    "overview",
+    "services",
+    "activity",
+    "docker",
+    "api",
+    "traffic",
+    "links",
+}:
+    st.session_state.nav_page = nav_qp
+
+page: str = st.session_state.nav_page
+
 log_event("SYS", "Dashboard initialized", "info")
 
-# ── Custom sidebar via st.sidebar ──
+# ── SVG Icons ────────────────────────────────────────────────────────────────
+
+_ICONS: dict[str, str] = {
+    "overview": """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+    </svg>""",
+    "services": """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="8" rx="2"/>
+      <rect x="2" y="14" width="20" height="8" rx="2"/>
+      <line x1="6" y1="6" x2="6" y2="6.01" stroke-width="2.5"/>
+      <line x1="6" y1="18" x2="6" y2="18.01" stroke-width="2.5"/>
+    </svg>""",
+    "activity": """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>""",
+    "docker": """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"/>
+      <line x1="2" y1="8" x2="22" y2="8"/>
+      <circle cx="9" cy="14" r="1.5" fill="currentColor"/>
+      <circle cx="13" cy="14" r="1.5" fill="currentColor"/>
+    </svg>""",
+    "api": """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="16 18 22 12 16 6"/>
+      <polyline points="8 6 2 12 8 18"/>
+    </svg>""",
+    "traffic": """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="22 2 14 10 18 10 18 18 10 18 10 14 2 22"/>
+    </svg>""",
+    "links": """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+    </svg>""",
+}
+
+_NAV_SECTIONS: list[_NavSection] = [
+    {
+        "label": "Monitor",
+        "items": [
+            {"key": "overview", "label": "Overview", "icon": _ICONS["overview"]},
+            {"key": "services", "label": "Services", "icon": _ICONS["services"]},
+            {"key": "activity", "label": "Activity", "icon": _ICONS["activity"]},
+        ],
+    },
+    {
+        "label": "Control",
+        "items": [
+            {"key": "docker", "label": "Docker", "icon": _ICONS["docker"]},
+            {"key": "api", "label": "API", "icon": _ICONS["api"]},
+            {"key": "traffic", "label": "Traffic", "icon": _ICONS["traffic"]},
+        ],
+    },
+    {
+        "label": "Access",
+        "items": [
+            {"key": "links", "label": "Links", "icon": _ICONS["links"]},
+        ],
+    },
+]
+
+# ── Sidebar ──────────────────────────────────────────────────────────────────
+
 with st.sidebar:
     st.markdown(
         """
@@ -81,48 +177,32 @@ with st.sidebar:
         </div>
         <div class="sidebar-brand-sub">Command Center</div>
     </div>
+    <div class="sidebar-nav">
     """,
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        '<div class="sidebar-section-label">Monitor</div>',
-        unsafe_allow_html=True,
-    )
-    if st.button("⌂  Overview", key="nav_overview", use_container_width=True):
-        st.session_state.nav_page = "overview"
-        st.rerun()
-    if st.button("⚙  Services", key="nav_services", use_container_width=True):
-        st.session_state.nav_page = "services"
-        st.rerun()
-    if st.button("⌛  Activity", key="nav_activity", use_container_width=True):
-        st.session_state.nav_page = "activity"
-        st.rerun()
+    for section in _NAV_SECTIONS:
+        st.markdown(
+            f'<div class="sidebar-section-label">{section["label"]}</div>',
+            unsafe_allow_html=True,
+        )
+        for item in section["items"]:
+            page_key = item["key"]
+            page_label = item["label"]
+            icon_svg = item["icon"]
+            active = " sidebar-nav-link--active" if page == page_key else ""
+            st.markdown(
+                f"""<a class="sidebar-nav-link{active}" href="?nav={page_key}" target="_self">
+                  <span class="sidebar-nav-icon">{icon_svg}</span>
+                  <span class="sidebar-nav-label">{page_label}</span>
+                </a>""",
+                unsafe_allow_html=True,
+            )
 
-    st.markdown(
-        '<div class="sidebar-section-label">Control</div>',
-        unsafe_allow_html=True,
-    )
-    if st.button("⊞  Docker", key="nav_docker", use_container_width=True):
-        st.session_state.nav_page = "docker"
-        st.rerun()
-    if st.button("⚡\ufe0e  API", key="nav_api", use_container_width=True):
-        st.session_state.nav_page = "api"
-        st.rerun()
-    if st.button("⇆  Traffic", key="nav_traffic", use_container_width=True):
-        st.session_state.nav_page = "traffic"
-        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown(
-        '<div class="sidebar-section-label">Access</div>',
-        unsafe_allow_html=True,
-    )
-    if st.button("⌘  Links", key="nav_links", use_container_width=True):
-        st.session_state.nav_page = "links"
-        st.rerun()
-
-# ── Page routing ──
-page = st.session_state.nav_page
+# ── Page routing ─────────────────────────────────────────────────────────────
 
 from streamlit_app.pages.activity import render as activity_render
 from streamlit_app.pages.api import render as api_render

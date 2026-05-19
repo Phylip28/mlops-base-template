@@ -96,49 +96,101 @@ div[data-testid="stSidebarCollapseButton"] {
 /* section labels: Monitor / Control / Access */
 .sidebar-section-label {
     font-family: 'Cabinet Grotesk', sans-serif;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--text-muted);
-    padding: 16px 12px 6px;
+    padding: 20px 16px 6px;
 }
 
-/* nav buttons in sidebar — style like nav items */
+/* ── Sidebar Navigation ── */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 0 8px;
+}
+
+.sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 6px;
+    text-decoration: none !important;
+    color: var(--text-body);
+    font-family: 'Satoshi', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.12s ease;
+    border-left: 2px solid transparent;
+    margin-bottom: 1px;
+}
+.sidebar-nav-link:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-left-color: var(--border-hover);
+}
+
+.sidebar-nav-link--active {
+    background: rgba(0,161,201,0.08);
+    color: var(--text-primary);
+    border-left-color: var(--accent);
+    font-weight: 600;
+}
+.sidebar-nav-link--active:hover {
+    border-left-color: var(--accent);
+    background: rgba(0,161,201,0.12);
+}
+
+.sidebar-nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.12s ease;
+}
+.sidebar-nav-link:hover .sidebar-nav-icon,
+.sidebar-nav-link--active .sidebar-nav-icon {
+    color: var(--accent);
+}
+
+.sidebar-nav-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Keep generic sidebar button styles for non-nav buttons */
 section[data-testid="stSidebar"] .stButton > button {
     font-family: 'Satoshi', sans-serif !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     font-weight: 500 !important;
     color: var(--text-body) !important;
     background: transparent !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 10px 14px !important;
-    text-align: left !important;
-    justify-content: flex-start !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-btn) !important;
+    padding: 8px 14px !important;
     transition: all 0.15s ease !important;
-    width: 100% !important;
-    height: auto !important;
     box-shadow: none !important;
 }
 section[data-testid="stSidebar"] .stButton > button:hover {
     background: var(--bg-surface) !important;
     color: var(--text-primary) !important;
-    border: none !important;
-}
-section[data-testid="stSidebar"] .stButton > button:focus {
-    box-shadow: none !important;
+    border-color: var(--border-hover) !important;
 }
 
 /* ── Custom Sidebar ── */
 .sidebar-brand {
-    padding: 24px 20px 20px;
+    padding: 22px 20px 18px;
     border-bottom: 1px solid var(--border);
-    background: linear-gradient(180deg, rgba(0,161,201,0.06) 0%, transparent 100%);
 }
 .sidebar-brand-title {
     font-family: 'Cabinet Grotesk', sans-serif;
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 800;
     color: #fff;
     letter-spacing: -0.3px;
@@ -148,10 +200,10 @@ section[data-testid="stSidebar"] .stButton > button:focus {
 }
 .sidebar-brand-title .brand-dot {
     width: 10px; height: 10px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), #0891b2);
+    border-radius: 3px;
+    background: var(--accent);
     display: inline-block;
-    box-shadow: 0 0 12px rgba(0,161,201,0.4);
+    box-shadow: 0 0 10px rgba(0,161,201,0.45);
 }
 .sidebar-brand-sub {
     font-family: 'Satoshi', sans-serif;
