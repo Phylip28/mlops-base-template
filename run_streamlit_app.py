@@ -15,6 +15,54 @@ from streamlit_app.utils import log_event
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+# Nuclear JS: force sidebar open on Firefox / any browser
+st.markdown(
+    """
+    <script>
+    (function() {
+        function forceOpen() {
+            var s = document.querySelector('section[data-testid="stSidebar"]');
+            if (!s) return;
+            s.setAttribute('aria-expanded', 'true');
+            s.style.setProperty('width', '260px', 'important');
+            s.style.setProperty('min-width', '260px', 'important');
+            s.style.setProperty('max-width', '260px', 'important');
+            s.style.setProperty('transform', 'none', 'important');
+            s.style.setProperty('margin-left', '0', 'important');
+            s.style.setProperty('display', 'flex', 'important');
+            s.style.setProperty('visibility', 'visible', 'important');
+            s.style.setProperty('opacity', '1', 'important');
+            s.style.setProperty('position', 'relative', 'important');
+            s.style.setProperty('left', '0', 'important');
+            s.style.setProperty('overflow', 'visible', 'important');
+            s.style.setProperty('flex-shrink', '0', 'important');
+            var header = s.querySelector('div[data-testid="stSidebarHeader"]');
+            if (header) {
+                header.style.setProperty('height', '0', 'important');
+                header.style.setProperty('min-height', '0', 'important');
+                header.style.setProperty('overflow', 'hidden', 'important');
+                header.style.setProperty('padding', '0', 'important');
+                header.style.setProperty('margin', '0', 'important');
+                header.style.setProperty('opacity', '0', 'important');
+                header.style.setProperty('pointer-events', 'none', 'important');
+            }
+            var cb = s.querySelector('div[data-testid="stSidebarCollapseButton"]');
+            if (cb) cb.style.setProperty('display', 'none', 'important');
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', forceOpen);
+        } else {
+            forceOpen();
+        }
+        setTimeout(forceOpen, 300);
+        setTimeout(forceOpen, 1000);
+        setTimeout(forceOpen, 2000);
+    })();
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
 if "activity_log" not in st.session_state:
     st.session_state.activity_log = []
 if "nav_page" not in st.session_state:

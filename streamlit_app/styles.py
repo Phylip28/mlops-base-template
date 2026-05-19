@@ -47,18 +47,44 @@ header[data-testid="stHeader"] { display: none !important; }
 div[data-testid="stStatusWidget"] { display: none !important; }
 
 /* ── Sidebar ── */
+/* Force sidebar always expanded (fixes Firefox collapsed-on-load) */
 section[data-testid="stSidebar"] {
     background: var(--bg-sidebar) !important;
     border-right: 1px solid var(--border) !important;
-    min-width: 230px !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
     padding-top: 0 !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    margin-left: 0 !important;
+    left: 0 !important;
+    position: relative !important;
+    overflow: visible !important;
+    flex-shrink: 0 !important;
 }
 section[data-testid="stSidebar"] > div:first-child {
     padding-top: 0 !important;
+    width: 100% !important;
 }
 
-/* hide Streamlit sidebar header (collapse button area) */
+/* Collapse header to zero height but KEEP in DOM (Firefox-safe) */
 div[data-testid="stSidebarHeader"] {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    border: none !important;
+}
+
+/* Also nuke the collapse button itself */
+div[data-testid="stSidebarCollapseButton"] {
     display: none !important;
 }
 
