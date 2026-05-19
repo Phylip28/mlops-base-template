@@ -98,6 +98,9 @@ with st.sidebar:
     if st.button("Activity", key="nav_activity", use_container_width=True):
         st.session_state.nav_page = "activity"
         st.rerun()
+    if st.button("Telemetry", key="nav_telemetry", use_container_width=True):
+        st.session_state.nav_page = "telemetry"
+        st.rerun()
 
     st.markdown(
         '<div class="sidebar-section-label">Control</div>',
@@ -130,12 +133,14 @@ from streamlit_app.pages.docker import render as docker_render
 from streamlit_app.pages.links import render as links_render
 from streamlit_app.pages.overview import render as overview_render
 from streamlit_app.pages.services import render as services_render
+from streamlit_app.pages.telemetry import render as telemetry_render
 from streamlit_app.pages.traffic import render as traffic_render
 
 renderers: dict[str, Callable[[], None]] = {
     "overview": overview_render,
     "services": services_render,
     "activity": activity_render,
+    "telemetry": telemetry_render,
     "docker": docker_render,
     "api": api_render,
     "traffic": traffic_render,
