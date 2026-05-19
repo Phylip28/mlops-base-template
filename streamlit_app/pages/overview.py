@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import random
-import time
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -24,7 +23,6 @@ def _generate_time_series(
     spike_prob: float = 0.02,
     spike_magnitude: float = 40.0,
 ) -> pd.DataFrame:
-    """Generate synthetic telemetry data with realistic patterns."""
     now = datetime.now()
     timestamps = [now - timedelta(minutes=i) for i in range(minutes, 0, -1)]
 
@@ -46,7 +44,6 @@ def _generate_time_series(
 
 
 def _hex_to_rgba(hex_color: str, alpha: float) -> str:
-    """Convert hex color to rgba string."""
     r = int(hex_color[1:3], 16)
     g = int(hex_color[3:5], 16)
     b = int(hex_color[5:7], 16)
@@ -54,7 +51,6 @@ def _hex_to_rgba(hex_color: str, alpha: float) -> str:
 
 
 def _axis_base() -> dict[str, Any]:
-    """Shared axis styling for F1 charts."""
     return dict(
         showgrid=True,
         gridcolor="rgba(42,47,54,0.5)",
@@ -78,7 +74,6 @@ def _f1_line_chart(
     y_range: tuple[float, float] | None = None,
     height: int = 260,
 ) -> go.Figure:
-    """Build a static F1-telemetry-style line chart."""
     fig = go.Figure()
 
     fig.add_trace(
@@ -151,7 +146,6 @@ def _static_timeline(
     colors: list[str],
     height: int = 520,
 ) -> go.Figure:
-    """Build a static multi-service timeline."""
     fig = make_subplots(
         rows=3,
         cols=1,
@@ -240,7 +234,6 @@ def _static_timeline(
 
 
 def render() -> None:
-    """Render the Overview page with auto-refresh."""
     log_event("SYS", "Overview dashboard viewed", "info")
 
     st.markdown(
@@ -255,7 +248,13 @@ def render() -> None:
         unsafe_allow_html=True,
     )
 
-    # ── Row 1: Uptime & Latency ──
+    _render_telemetry()
+
+
+@st.fragment(run_every=5)
+def _render_telemetry() -> None:
+    """Fragment: auto-refreshes charts every 5s without full page reload."""
+
     col1, col2 = st.columns(2)
 
     with col1:
@@ -293,7 +292,6 @@ def render() -> None:
             fig, use_container_width=True, config={"displayModeBar": False}
         )
 
-    # ── Row 2: Throughput & Error Rate ──
     col1, col2 = st.columns(2)
 
     with col1:
@@ -335,7 +333,6 @@ def render() -> None:
             fig, use_container_width=True, config={"displayModeBar": False}
         )
 
-    # ── Row 3: Multi-service timeline ──
     st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
     st.markdown(
         "<div style='font-family:Cabinet Grotesk,sans-serif; "
@@ -363,7 +360,3 @@ def render() -> None:
     st.plotly_chart(
         fig, use_container_width=True, config={"displayModeBar": False}
     )
-
-    # Auto-refresh every 5 seconds (AWS CloudWatch style)
-    time.sleep(5)
-    st.rerun()

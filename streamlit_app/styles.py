@@ -514,6 +514,14 @@ div[data-testid="stHorizontalBlock"] .stButton > button { width: 100% !important
     grid-template-columns: repeat(6, 1fr);
     gap: 12px;
 }
+.link-card-wrapper {
+    text-decoration: none !important;
+}
+.link-card-wrapper:hover .link-card {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+}
 .link-card {
     background: var(--bg-surface);
     border: 1px solid var(--border);
@@ -543,6 +551,13 @@ div[data-testid="stHorizontalBlock"] .stButton > button { width: 100% !important
     transition: transform 0.15s ease;
 }
 .link-card:hover .link-icon-badge { transform: scale(1.08); }
+.link-initial {
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+}
 .link-name {
     font-family: 'Satoshi', sans-serif;
     font-size: 12px;
