@@ -25,35 +25,6 @@ st.set_page_config(
     layout="wide",
     page_icon="🛰️",
     initial_sidebar_state="expanded",
-    menu_items={
-        "Get Help": None,
-        "Report a bug": None,
-        "About": None,
-    },
-)
-
-# ── Theme configuration — applied before any rendering ──
-st.markdown(
-    """
-    <style>
-    [data-testid="stAppViewContainer"] {
-        background-color: #0f141a !important;
-    }
-    [data-testid="stMain"] {
-        background-color: #0f141a !important;
-    }
-    [data-testid="stSidebar"] {
-        background-color: #16191f !important;
-    }
-    .stApp {
-        background-color: #0f141a !important;
-    }
-    iframe {
-        background-color: #0f141a !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
 )
 
 from streamlit_app.styles import CSS
