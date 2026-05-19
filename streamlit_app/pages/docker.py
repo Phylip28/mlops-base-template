@@ -25,13 +25,9 @@ def render() -> None:
             st.markdown(
                 f"""
             <div class="svc-card" style="text-align:center;">
-                <div class="svc-name" style="font-size:12px;">{name}</div>
-                <div style="margin:8px 0;">
-                    <span class="svc-indicator {"up" if running else "down"}"
-                    style="display:inline-block;"></span>
-                </div>
-                <span class="badge {"badge-up" if running else "badge-down"}">
-                    {"ONLINE" if running else "OFFLINE"}
+                <div class="svc-name">{name}</div>
+                <span class="{"svc-status-up" if running else "svc-status-down"}">
+                    {"Activo" if running else "Inactivo"}
                 </span>
             </div>
             """,

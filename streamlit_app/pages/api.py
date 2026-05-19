@@ -25,8 +25,8 @@ def render() -> None:
                 <div style="font-family:'JetBrains Mono',monospace;font-size:11px;
                     color:var(--text-muted);margin-top:4px;">:8000</div>
             </div>
-            <span class="badge {"badge-up" if api_up else "badge-down"}">
-                {"● ONLINE" if api_up else "● OFFLINE"}
+            <span class="{"svc-status-up" if api_up else "svc-status-down"}">
+                {"Activo" if api_up else "Inactivo"}
             </span>
         </div>
     </div>

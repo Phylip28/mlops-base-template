@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Generate self-polling Chart.js widgets for st.components.v1.html."""
+"""Generate self-polling Chart.js widgets for st.iframe."""
 
 from __future__ import annotations
 

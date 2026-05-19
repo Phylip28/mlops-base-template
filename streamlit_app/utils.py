@@ -15,6 +15,15 @@ SERVICES = [
     ("mlops_grafana", "Grafana", 3000),
 ]
 
+SERVICE_LOGOS: dict[str, str] = {
+    "PostgreSQL": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original.svg",
+    "MinIO": "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/minio.svg",
+    "MLflow": "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/mlflow.svg",
+    "Prometheus": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/prometheus/prometheus-original.svg",
+    "Grafana": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/grafana/grafana-original.svg",
+    "FastAPI": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fastapi/fastapi-original.svg",
+}
+
 
 def log_event(tag: str, msg: str, level: str = "info") -> None:
     ts = datetime.now().strftime("%H:%M:%S")

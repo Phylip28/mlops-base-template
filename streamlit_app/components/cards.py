@@ -13,19 +13,33 @@ def metric_tile(value: str, label: str, color: str = "accent") -> None:
     )
 
 
-def service_card(name: str, port: int, running: bool) -> None:
-    indicator = "up" if running else "down"
-    badge_cls = "badge-up" if running else "badge-down"
-    badge_txt = "ONLINE" if running else "OFFLINE"
+def service_card(
+    name: str, port: int, running: bool, logo_url: str | None = None
+) -> None:
+    badge_cls = "svc-status-up" if running else "svc-status-down"
+    badge_txt = "Activo" if running else "Inactivo"
+    if logo_url:
+        logo_html = (
+            f'<div class="svc-icon">'
+            f'<img src="{logo_url}" alt="{name}" class="svc-logo-img" '
+            f"onerror=\"this.style.display='none';"
+            f"this.nextElementSibling.style.display='block'\" />"
+            f'<span class="svc-fallback" style="display:none">{name[0]}</span>'
+            f"</div>"
+        )
+    else:
+        logo_html = f"""<div class="svc-icon">
+                <span class="svc-fallback">{name[0]}</span>
+            </div>"""
     st.markdown(
         f"""
     <div class="svc-card">
-        <div class="svc-header">
-            <span class="svc-name">{name}</span>
-            <span class="svc-indicator {indicator}"></span>
+        <span class="svc-name">{name}</span>
+        {logo_html}
+        <div class="svc-info">
+            <span class="svc-port">Puerto: {port}</span>
+            <span class="{badge_cls}">Estado: {badge_txt}</span>
         </div>
-        <div class="svc-port">:{port}</div>
-        <span class="badge {badge_cls}">{badge_txt}</span>
     </div>
     """,
         unsafe_allow_html=True,

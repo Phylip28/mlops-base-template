@@ -1,6 +1,6 @@
 """Overview page — real-time telemetry with self-polling Chart.js components.
 
-Each chart is a st.components.v1.html iframe that polls the telemetry
+Each chart is a st.iframe that polls the telemetry
 HTTP endpoint every 1s.  Iframes are rendered ONCE (persist forever)
 so hover tooltips never disappear.  A fragment updates the shared
 snapshot that the endpoint serves.
@@ -148,7 +148,7 @@ def render() -> None:
     for i, cfg in enumerate(CHARTS):
         target = col1 if i % 2 == 0 else col2
         with target:
-            st.components.v1.html(
+            st.iframe(
                 build_chart_html(
                     chart_id=cfg["id"],
                     title=cfg["title"],
@@ -160,7 +160,6 @@ def render() -> None:
                     height=cfg["height"],
                 ),
                 height=cfg["height"],
-                scrolling=False,
             )
 
     st.markdown("<div style='margin:24px 0 12px 0;'></div>", unsafe_allow_html=True)
@@ -176,7 +175,7 @@ def render() -> None:
     svc_cols = st.columns(len(SERVICE_CHARTS))
     for i, cfg in enumerate(SERVICE_CHARTS):
         with svc_cols[i]:
-            st.components.v1.html(
+            st.iframe(
                 build_chart_html(
                     chart_id=cfg["id"],
                     title=cfg["title"],
@@ -188,7 +187,6 @@ def render() -> None:
                     height=cfg["height"],
                 ),
                 height=cfg["height"],
-                scrolling=False,
             )
 
     # Fragment: polls metrics every 1s, updates shared snapshot
