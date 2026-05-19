@@ -1,10 +1,5 @@
 # ruff: noqa: E501
-"""Generate self-polling Chart.js widgets for st.components.v1.html.
-
-Each widget polls http://localhost:8503/metrics every 1s and renders
-a streaming Chart.js line chart with AWS-style controls.
-No streaming plugin, no date adapter — uses raw timestamps + manual window.
-"""
+"""Generate self-polling Chart.js widgets for st.components.v1.html."""
 
 from __future__ import annotations
 
@@ -19,7 +14,6 @@ def build_chart_html(
     y_max: float,
     height: int = 260,
 ) -> str:
-    """Return complete HTML doc for a single Chart.js chart widget."""
     escaped_title = title.replace("'", "\\'")
     escaped_y_label = y_label.replace("'", "\\'")
     y_range = y_max - y_min
@@ -42,17 +36,17 @@ body{{background:#0f141a;font-family:'JetBrains Mono',monospace;color:#d5dbdb;pa
 .aws-select:focus{{border-color:#00a1c9}}
 .aws-select option{{background:#1e242b;color:#d5dbdb}}
 .canvas-wrap{{width:100%;height:{height - 32}px}}
-canvas{{width:100%!important;height:100%!important}}
+canvas{{width:100%!important;height:100%!important;cursor:crosshair}}
 </style></head>
 <body>
 <div class="chart-header">
   <span class="chart-title">{escaped_title}</span>
   <div class="ctrl-group">
-    <button class="aws-btn" onclick="handleRefresh()" title="Refresh chart">&#x21bb;</button>
-    <select class="aws-select" onchange="handleInterval(this.value)" title="Auto-refresh interval">
-      <option value="1" selected>1s</option>
+    <button class="aws-btn" id="btn-refresh" title="Refresh chart">&#x21bb;</button>
+    <select class="aws-select" id="sel-interval" title="Auto-refresh interval">
+      <option value="1">1s</option>
       <option value="5">5s</option>
-      <option value="10">10s</option>
+      <option value="10" selected>10s</option>
       <option value="30">30s</option>
       <option value="60">1m</option>
       <option value="300">5m</option>
@@ -71,10 +65,11 @@ canvas{{width:100%!important;height:100%!important}}
   var ctx = document.getElementById('chart').getContext('2d');
   var isHovering = false;
   var pendingValue = null;
-  var pollIntervalMs = 1000;
+  var pollIntervalMs = 10000;
   var pollTimer = null;
   var dataBuffer = [];
   var seenKeys = new Set();
+  var historyLoaded = false;
 
   function fmtTime(ts) {{
     var d = new Date(ts);
@@ -140,7 +135,7 @@ canvas{{width:100%!important;height:100%!important}}
 
   var canvas = chart.canvas;
   canvas.addEventListener('mouseenter', function() {{ isHovering = true; }});
-  canvas.addEventListener('mouseleave', function() {{ isHovering = false; if (pendingValue !== null) {{ addPoint(pendingValue); pendingValue = null; }} }});
+  canvas.addEventListener('mouseleave', function() {{ isHovering = false; if (pendingValue !== null) {{ addPoint(pendingValue); pendingValue = null; tick(); }} }});
 
   function addPoint(val) {{
     var now = Date.now();
@@ -152,6 +147,15 @@ canvas{{width:100%!important;height:100%!important}}
     }}
     dataBuffer.push({{ x: now, y: val }});
     while (dataBuffer.length > 0 && dataBuffer[0].x < now - WINDOW_MS) dataBuffer.shift();
+  }}
+
+  function addHistoryPoint(tsStr, val) {{
+    var t = new Date(tsStr).getTime();
+    if (isNaN(t)) return;
+    var key = Math.floor(t / 100) * 100;
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    dataBuffer.push({{ x: t, y: val }});
   }}
 
   function tick() {{
@@ -176,6 +180,23 @@ canvas{{width:100%!important;height:100%!important}}
       .catch(function(){{}});
   }}
 
+  function loadHistory() {{
+    fetch('http://localhost:8503/metrics?history=true')
+      .then(function(r) {{ return r.json(); }})
+      .then(function(all) {{
+        var points = all[METRIC_KEY];
+        if (!points || !points.length) {{ historyLoaded = true; return; }}
+        seenKeys.clear();
+        dataBuffer = [];
+        for (var i = 0; i < points.length; i++) {{
+          addHistoryPoint(points[i].ts, points[i].val);
+        }}
+        historyLoaded = true;
+        tick();
+      }})
+      .catch(function(){{ historyLoaded = true; }});
+  }}
+
   function handleRefresh() {{
     dataBuffer = [];
     seenKeys.clear();
@@ -190,8 +211,16 @@ canvas{{width:100%!important;height:100%!important}}
     pollTimer = setInterval(poll, pollIntervalMs);
   }}
 
+  function startLoop() {{
+    pollTimer = setInterval(poll, pollIntervalMs);
+  }}
+
+  document.getElementById('btn-refresh').addEventListener('click', handleRefresh);
+  document.getElementById('sel-interval').addEventListener('change', function() {{ handleInterval(this.value); }});
+
+  loadHistory();
   poll();
-  pollTimer = setInterval(poll, pollIntervalMs);
+  startLoop();
 }})();
 </script>
 </body></html>"""

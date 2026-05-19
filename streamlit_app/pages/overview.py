@@ -136,7 +136,7 @@ def render() -> None:
         <div class="page-header">
             <div class="page-title">Overview</div>
             <div class="page-subtitle">
-                Real-time telemetry — Prometheus + Docker · Chart.js 60fps streaming
+                Live service health and performance monitoring
             </div>
         </div>
         """,

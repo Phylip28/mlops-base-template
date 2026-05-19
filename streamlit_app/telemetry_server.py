@@ -1,25 +1,37 @@
-"""Tiny HTTP endpoint that serves latest metrics snapshot to Chart.js iframes.
+"""Tiny HTTP endpoint that serves latest + historical metrics to Chart.js iframes.
 
-Runs in a background thread, started once when the module is imported.
+Runs in a background thread.  Maintains 120-point rolling history so
+charts survive page reload and pick up where they left off.
 """
 
 from __future__ import annotations
 
 import json
 import threading
+from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse
 
 TELEMETRY_PORT = 8503
+HISTORY_MAX = 120
 
 _latest: dict[str, float] = {}
+_history: dict[str, deque[dict[str, object]]] = {}
 _lock = threading.Lock()
 
 
 def update_snapshot(data: dict[str, float]) -> None:
-    """Store latest snapshot (called from Streamlit fragment)."""
-    global _latest
+    """Store latest snapshot + append to rolling history (called from fragment)."""
+    global _latest, _history
     with _lock:
         _latest = dict(data)
+        from datetime import datetime, timezone
+
+        ts = datetime.now(timezone.utc).isoformat()
+        for key, val in data.items():
+            if key not in _history:
+                _history[key] = deque(maxlen=HISTORY_MAX)
+            _history[key].append({"ts": ts, "val": val})
 
 
 def _get_snapshot() -> dict[str, float]:
@@ -27,11 +39,25 @@ def _get_snapshot() -> dict[str, float]:
         return dict(_latest)
 
 
+def _get_history(metric_key: str) -> list[dict[str, object]]:
+    with _lock:
+        dq = _history.get(metric_key)
+        return list(dq) if dq else []
+
+
+def _get_all_history() -> dict[str, list[dict[str, object]]]:
+    with _lock:
+        return {k: list(v) for k, v in _history.items()}
+
+
 class _Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
-        if self.path == "/metrics":
-            data = _get_snapshot()
-            body = json.dumps(data).encode()
+        parsed = urlparse(self.path)
+        if parsed.path == "/metrics":
+            if "history" in parsed.query:
+                body = json.dumps(_get_all_history()).encode()
+            else:
+                body = json.dumps(_get_snapshot()).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -43,7 +69,7 @@ class _Handler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def log_message(self, format: str, *args: object) -> None:
-        pass  # silent
+        pass
 
 
 _server: HTTPServer | None = None
