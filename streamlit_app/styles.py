@@ -4,6 +4,10 @@ CSS = """
 @import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800,500,600&f[]=satoshi@400,500,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* ── Flash prevention — dark background before Streamlit renders ── */
+html { background-color: #0f141a !important; }
+body { background-color: #0f141a !important; }
+
 /* ── AWS Dark Mode Palette ── */
 :root {
     --bg-body:       #0f141a;
@@ -41,6 +45,14 @@ CSS = """
 * { box-sizing: border-box; }
 
 .stApp {
+    background: var(--bg-body) !important;
+}
+
+/* ── Streamlit container backgrounds ── */
+div[data-testid="stAppViewContainer"] {
+    background: var(--bg-body) !important;
+}
+div[data-testid="stMain"] {
     background: var(--bg-body) !important;
 }
 
