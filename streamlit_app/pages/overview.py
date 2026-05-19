@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import time
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -69,22 +70,21 @@ def _axis_base() -> dict[str, Any]:
     )
 
 
-def _animated_f1_line_chart(
+def _f1_line_chart(
     df: pd.DataFrame,
     title: str,
     color: str,
     y_label: str,
     y_range: tuple[float, float] | None = None,
     height: int = 260,
-    frame_duration: int = 40,
 ) -> go.Figure:
-    """Build an animated F1-telemetry-style line chart."""
+    """Build a static F1-telemetry-style line chart."""
     fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
-            x=[df["timestamp"].iloc[0]],
-            y=[df["value"].iloc[0]],
+            x=df["timestamp"],
+            y=df["value"],
             mode="lines",
             line=dict(color=color, width=2),
             fill="tozeroy",
@@ -96,45 +96,14 @@ def _animated_f1_line_chart(
 
     fig.add_trace(
         go.Scatter(
-            x=[df["timestamp"].iloc[0]],
-            y=[df["value"].iloc[0]],
+            x=[df["timestamp"].iloc[-1]],
+            y=[df["value"].iloc[-1]],
             mode="markers",
             marker=dict(color=color, size=10, symbol="circle"),
             showlegend=False,
             hoverinfo="skip",
         )
     )
-
-    frames = []
-    for i in range(2, len(df) + 1):
-        frames.append(
-            go.Frame(
-                data=[
-                    go.Scatter(
-                        x=df["timestamp"][:i],
-                        y=df["value"][:i],
-                        mode="lines",
-                        line=dict(color=color, width=2),
-                        fill="tozeroy",
-                        fillcolor=_hex_to_rgba(color, 0.08),
-                        hovertemplate=(
-                            "%{x|%H:%M:%S}<br>%{y:.1f}<extra></extra>"
-                        ),
-                    ),
-                    go.Scatter(
-                        x=[df["timestamp"].iloc[i - 1]],
-                        y=[df["value"].iloc[i - 1]],
-                        mode="markers",
-                        marker=dict(color=color, size=10, symbol="circle"),
-                        showlegend=False,
-                        hoverinfo="skip",
-                    ),
-                ],
-                name=str(i),
-            )
-        )
-
-    fig.frames = frames
 
     fig.update_layout(
         title=dict(
@@ -171,61 +140,18 @@ def _animated_f1_line_chart(
                 color="#d5dbdb",
             ),
         ),
-        updatemenus=[
-            {
-                "type": "buttons",
-                "direction": "left",
-                "showactive": False,
-                "x": 0.05,
-                "y": 1.12,
-                "xanchor": "left",
-                "yanchor": "top",
-                "pad": {"t": 0, "r": 10},
-                "buttons": [
-                    {
-                        "label": "▶  Play",
-                        "method": "animate",
-                        "args": [
-                            None,
-                            {
-                                "frame": {
-                                    "duration": frame_duration,
-                                    "redraw": False,
-                                },
-                                "fromcurrent": True,
-                                "transition": {"duration": 0},
-                                "mode": "immediate",
-                            },
-                        ],
-                    },
-                    {
-                        "label": "⏸  Pause",
-                        "method": "animate",
-                        "args": [
-                            [None],
-                            {
-                                "frame": {"duration": 0, "redraw": False},
-                                "mode": "immediate",
-                                "transition": {"duration": 0},
-                            },
-                        ],
-                    },
-                ],
-            }
-        ],
     )
 
     return fig
 
 
-def _animated_timeline(
+def _static_timeline(
     dfs: list[pd.DataFrame],
     titles: list[str],
     colors: list[str],
     height: int = 520,
-    frame_duration: int = 40,
 ) -> go.Figure:
-    """Build an animated multi-service timeline."""
+    """Build a static multi-service timeline."""
     fig = make_subplots(
         rows=3,
         cols=1,
@@ -238,8 +164,8 @@ def _animated_timeline(
     for i in range(3):
         fig.add_trace(
             go.Scatter(
-                x=[dfs[i]["timestamp"].iloc[0]],
-                y=[dfs[i]["value"].iloc[0]],
+                x=dfs[i]["timestamp"],
+                y=dfs[i]["value"],
                 mode="lines",
                 line=dict(color=colors[i], width=1.5),
                 fill="tozeroy",
@@ -251,27 +177,8 @@ def _animated_timeline(
             col=1,
         )
 
-    frames = []
-    max_len = min(len(df) for df in dfs)
-    for frame_idx in range(2, max_len + 1):
-        frame_data = []
-        for i in range(3):
-            frame_data.append(
-                go.Scatter(
-                    x=dfs[i]["timestamp"][:frame_idx],
-                    y=dfs[i]["value"][:frame_idx],
-                    mode="lines",
-                    line=dict(color=colors[i], width=1.5),
-                    fill="tozeroy",
-                    fillcolor=_hex_to_rgba(colors[i], 0.06),
-                    hovertemplate=(
-                        "%{x|%H:%M:%S}<br>%{y:.1f}%<extra></extra>"
-                    ),
-                )
-            )
-        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
-
-    fig.frames = frames
+    x_min = min(df["timestamp"].iloc[0] for df in dfs)
+    x_max = max(df["timestamp"].iloc[-1] for df in dfs)
 
     fig.update_layout(
         margin=dict(l=50, r=20, t=60, b=30),
@@ -289,52 +196,8 @@ def _animated_timeline(
                 color="#d5dbdb",
             ),
         ),
-        updatemenus=[
-            {
-                "type": "buttons",
-                "direction": "left",
-                "showactive": False,
-                "x": 0.05,
-                "y": 1.08,
-                "xanchor": "left",
-                "yanchor": "top",
-                "pad": {"t": 0, "r": 10},
-                "buttons": [
-                    {
-                        "label": "▶  Play",
-                        "method": "animate",
-                        "args": [
-                            None,
-                            {
-                                "frame": {
-                                    "duration": frame_duration,
-                                    "redraw": False,
-                                },
-                                "fromcurrent": True,
-                                "transition": {"duration": 0},
-                                "mode": "immediate",
-                            },
-                        ],
-                    },
-                    {
-                        "label": "⏸  Pause",
-                        "method": "animate",
-                        "args": [
-                            [None],
-                            {
-                                "frame": {"duration": 0, "redraw": False},
-                                "mode": "immediate",
-                                "transition": {"duration": 0},
-                            },
-                        ],
-                    },
-                ],
-            }
-        ],
     )
 
-    x_min = min(df["timestamp"].iloc[0] for df in dfs)
-    x_max = max(df["timestamp"].iloc[-1] for df in dfs)
     for i in range(1, 4):
         fig.update_xaxes(
             showgrid=True,
@@ -377,7 +240,7 @@ def _animated_timeline(
 
 
 def render() -> None:
-    """Render the animated Overview page."""
+    """Render the Overview page with auto-refresh."""
     log_event("SYS", "Overview dashboard viewed", "info")
 
     st.markdown(
@@ -385,7 +248,7 @@ def render() -> None:
         <div class="page-header">
             <div class="page-title">Overview</div>
             <div class="page-subtitle">
-                Real-time platform telemetry
+                Real-time platform telemetry — auto-refresh 5s
             </div>
         </div>
         """,
@@ -399,7 +262,7 @@ def render() -> None:
         df_uptime = _generate_time_series(
             minutes=120, base_value=95, variance=8, noise=2, spike_prob=0.03
         )
-        fig = _animated_f1_line_chart(
+        fig = _f1_line_chart(
             df_uptime,
             title="Platform Uptime",
             color="#00a1c9",
@@ -419,7 +282,7 @@ def render() -> None:
             spike_prob=0.05,
             spike_magnitude=80,
         )
-        fig = _animated_f1_line_chart(
+        fig = _f1_line_chart(
             df_latency,
             title="API Latency",
             color="#ff9900",
@@ -441,7 +304,7 @@ def render() -> None:
             noise=10,
             spike_prob=0.04,
         )
-        fig = _animated_f1_line_chart(
+        fig = _f1_line_chart(
             df_rps,
             title="Requests / Second",
             color="#44b9d6",
@@ -461,7 +324,7 @@ def render() -> None:
             spike_prob=0.08,
             spike_magnitude=15,
         )
-        fig = _animated_f1_line_chart(
+        fig = _f1_line_chart(
             df_errors,
             title="Error Rate",
             color="#d13212",
@@ -472,7 +335,7 @@ def render() -> None:
             fig, use_container_width=True, config={"displayModeBar": False}
         )
 
-    # ── Row 3: Multi-service animated timeline ──
+    # ── Row 3: Multi-service timeline ──
     st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
     st.markdown(
         "<div style='font-family:Cabinet Grotesk,sans-serif; "
@@ -496,7 +359,11 @@ def render() -> None:
     titles = [c[0] for c in service_configs]
     colors = [c[1] for c in service_configs]
 
-    fig = _animated_timeline(dfs, titles, colors)
+    fig = _static_timeline(dfs, titles, colors)
     st.plotly_chart(
         fig, use_container_width=True, config={"displayModeBar": False}
     )
+
+    # Auto-refresh every 5 seconds (AWS CloudWatch style)
+    time.sleep(5)
+    st.rerun()

@@ -89,13 +89,13 @@ with st.sidebar:
         '<div class="sidebar-section-label">Monitor</div>',
         unsafe_allow_html=True,
     )
-    if st.button("⧉  Overview", key="nav_overview", use_container_width=True):
+    if st.button("⌂  Overview", key="nav_overview", use_container_width=True):
         st.session_state.nav_page = "overview"
         st.rerun()
-    if st.button("◈  Services", key="nav_services", use_container_width=True):
+    if st.button("⚙  Services", key="nav_services", use_container_width=True):
         st.session_state.nav_page = "services"
         st.rerun()
-    if st.button("◉  Activity", key="nav_activity", use_container_width=True):
+    if st.button("⌛  Activity", key="nav_activity", use_container_width=True):
         st.session_state.nav_page = "activity"
         st.rerun()
 
@@ -103,13 +103,13 @@ with st.sidebar:
         '<div class="sidebar-section-label">Control</div>',
         unsafe_allow_html=True,
     )
-    if st.button("▣  Docker", key="nav_docker", use_container_width=True):
+    if st.button("⊞  Docker", key="nav_docker", use_container_width=True):
         st.session_state.nav_page = "docker"
         st.rerun()
-    if st.button("▶\ufe0e  API", key="nav_api", use_container_width=True):
+    if st.button("⚡\ufe0e  API", key="nav_api", use_container_width=True):
         st.session_state.nav_page = "api"
         st.rerun()
-    if st.button("◊  Traffic", key="nav_traffic", use_container_width=True):
+    if st.button("⇆  Traffic", key="nav_traffic", use_container_width=True):
         st.session_state.nav_page = "traffic"
         st.rerun()
 
@@ -117,7 +117,7 @@ with st.sidebar:
         '<div class="sidebar-section-label">Access</div>',
         unsafe_allow_html=True,
     )
-    if st.button("∞  Links", key="nav_links", use_container_width=True):
+    if st.button("⌘  Links", key="nav_links", use_container_width=True):
         st.session_state.nav_page = "links"
         st.rerun()
 

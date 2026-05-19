@@ -533,6 +533,16 @@ div[data-testid="stHorizontalBlock"] .stButton > button { width: 100% !important
     transform: translateY(-2px);
 }
 .link-icon { font-size: 24px; line-height: 1; }
+.link-icon-badge {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 6px;
+    transition: transform 0.15s ease;
+}
+.link-card:hover .link-icon-badge { transform: scale(1.08); }
 .link-name {
     font-family: 'Satoshi', sans-serif;
     font-size: 12px;
