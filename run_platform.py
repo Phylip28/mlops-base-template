@@ -1,10 +1,13 @@
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import time
 import webbrowser
+
 import psutil
+
 
 def _resolve_docker_compose() -> list[str]:
     if shutil.which('docker-compose'):
@@ -13,10 +16,36 @@ def _resolve_docker_compose() -> list[str]:
         return ['docker', 'compose']
     raise RuntimeError('No se encontro Docker Compose.')
 
-def start_api() -> subprocess.Popen:
+
+def _get_host_ip() -> str:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.1)
+        s.connect(('10.254.254.254', 1))
+        ip: str = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return '127.0.0.1'
+
+
+def _build_cors_origins() -> str:
+    host_ip = _get_host_ip()
+    ports = ['8000', '8001', '8002', '8501', '8502', '8503']
+    origins: list[str] = []
+    for p in ports:
+        origins.append(f'http://localhost:{p}')
+        origins.append(f'http://127.0.0.1:{p}')
+        if host_ip != '127.0.0.1':
+            origins.append(f'http://{host_ip}:{p}')
+    return ','.join(origins)
+
+
+def start_api() -> subprocess.Popen:  # type: ignore[type-arg]
     print('[API] Iniciando Uvicorn (FastAPI) en background...', flush=True)
     env = os.environ.copy()
     env['PYTHONPATH'] = '.'
+    env['CORS_ORIGINS'] = _build_cors_origins()
     venv_python = os.path.join('.venv', 'Scripts', 'python.exe')
     if not os.path.exists(venv_python):
         venv_python = sys.executable
@@ -37,7 +66,10 @@ def main() -> None:
     print('=== MLOps Platform Runner (E2E)  ===')
     print('====================================')
 
-    print('\n[1/3] Levantando infraestructura (MLflow, MinIO, Postgres, Prometheus, Grafana)...')
+    print(
+        "\n[1/3] Levantando infraestructura "
+        "(MLflow, MinIO, Postgres, Prometheus, Grafana)..."
+    )
     try:
         compose_cmd = _resolve_docker_compose()
         subprocess.run(compose_cmd + ['up', '-d'], check=True)
@@ -59,7 +91,7 @@ def main() -> None:
     if not os.path.exists(venv_python):
         venv_python = sys.executable
 
-    cmd = [venv_python, '-m', 'streamlit', 'run', 'run_streamlit_app.py', '--server.port', '8502']
+    cmd = [venv_python, '-m', 'streamlit', 'run', 'run_streamlit_app.py', '--server.port', '8502']  # noqa: E501
     
     print('\n🚀 Servicios en linea!')
     print('------------------------------------------------')
@@ -93,7 +125,7 @@ def main() -> None:
         print('Ejecutando docker-compose down...')
         try:
             subprocess.run(compose_cmd + ['down'], check=False)
-        except:
+        except Exception:
              pass
         print('Contenedores detenidos.')
         sys.exit(0)

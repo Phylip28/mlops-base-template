@@ -85,18 +85,20 @@ def track_request(endpoint: str, method: str, status_code: int, latency: float) 
 
 app = FastAPI(title="Multi-Tenant MLOps API", lifespan=lifespan)
 
+def _build_cors_origins() -> list[str]:
+    raw = os.environ.get("CORS_ORIGINS", "")
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    default_ports = ["8000", "8001", "8002", "8501", "8502", "8503", "3000"]
+    origins: list[str] = []
+    for p in default_ports:
+        origins.append(f"http://localhost:{p}")
+        origins.append(f"http://127.0.0.1:{p}")
+    return origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://localhost:8001",
-        "http://127.0.0.1:8001",
-        "http://localhost:8002",
-        "http://127.0.0.1:8002",
-        "http://localhost:8502",
-        "http://127.0.0.1:8502",
-    ],
+    allow_origins=_build_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
