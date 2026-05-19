@@ -10,7 +10,7 @@ _LINKS = [
     ("MinIO", "http://localhost:9001", "MinIO"),
     ("FastAPI", "http://localhost:8000/docs", "FastAPI"),
     ("Prometheus", "http://localhost:9090", "Prometheus"),
-    ("Prediction", "http://localhost:8002", "FastAPI"),
+    ("Prediction", "http://localhost:8001", "FastAPI"),
 ]
 
 

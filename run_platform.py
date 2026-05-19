@@ -62,24 +62,17 @@ def start_api() -> subprocess.Popen:  # type: ignore[type-arg]
     return subprocess.Popen(cmd, env=env)
 
 
-def start_prediction_ui() -> subprocess.Popen:  # type: ignore[type-arg]
-    print("[Prediction-UI] Iniciando servicio en background...", flush=True)
-    venv_python = os.path.join(
-        "services", "prediction-ui", ".venv", "Scripts", "python.exe"
-    )
-    if not os.path.exists(venv_python):
-        venv_python = sys.executable
-    cmd = [
-        venv_python,
-        "-m",
-        "uvicorn",
-        "src.app:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8001",
-    ]
-    return subprocess.Popen(cmd)
+def _kill_process_on_port(port: int) -> None:
+    """Kill any process currently bound to the specified port."""
+    for proc in psutil.process_iter(["pid", "name"]):
+        try:
+            for conn in proc.connections(kind="inet"):
+                if conn.laddr.port == port:
+                    print(f"[{port}] Liberando puerto (PID {proc.pid})...", flush=True)
+                    proc.kill()
+                    proc.wait(timeout=3)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, subprocess.TimeoutExpired):
+            pass
 
 
 def main() -> None:
@@ -89,32 +82,29 @@ def main() -> None:
 
     print(
         "\n[1/4] Levantando infraestructura "
-        "(MLflow, MinIO, Postgres, Prometheus, Grafana)..."
+        "(MLflow, MinIO, Postgres, Prometheus, Grafana, Prediction-UI)..."
     )
     try:
         compose_cmd = _resolve_docker_compose()
+        # Rebuild prediction-ui to ensure latest code is in the container
+        print("[Docker] Rebuild prediction-ui con codigo reciente...", flush=True)
+        subprocess.run(compose_cmd + ["build", "--no-cache", "prediction-ui"], check=True)
         subprocess.run(compose_cmd + ["up", "-d"], check=True)
     except Exception as err:
         print(f"Error levantando Docker Compose: {err}")
         sys.exit(1)
 
-    print("\n[2/4] Levantando la API REST Server en puerto 8000...")
+    print("\n[2/4] Liberando puertos y levantando API REST Server (puerto 8000)...")
+    _kill_process_on_port(8000)
     try:
         api_process = start_api()
-        time.sleep(5)  # Wait for it to boot
+        time.sleep(5)
     except Exception as err:
         print(f"Error iniciando API: {err}")
         sys.exit(1)
 
-    print("\n[3/4] Levantando Prediction UI en puerto 8001...")
-    try:
-        pred_ui_process = start_prediction_ui()
-        time.sleep(2)  # Wait for it to boot
-    except Exception as err:
-        print(f"Error iniciando Prediction UI: {err}")
-        sys.exit(1)
-
-    print("\n[4/4] Levantando Interfaz Grafica de Control Visual (Streamlit)...")
+    print("\n[3/4] Liberando puerto y levantando Streamlit (puerto 8502)...")
+    _kill_process_on_port(8502)
     venv_python = os.path.join(".venv", "Scripts", "python.exe")
 
     if not os.path.exists(venv_python):
@@ -133,8 +123,11 @@ def main() -> None:
     print("\n Servicios en linea!")
     print("------------------------------------------------")
     print("El Centro de Control se abrira en tu navegador automaticamente.")
-    print("  Command Center: http://localhost:8502")
-    print("  Prediction UI:  http://localhost:8001")
+    print("  Command Center:  http://localhost:8502")
+    print("  Prediction UI:   http://localhost:8001 (Docker)")
+    print("  API REST:        http://localhost:8000")
+    print("  Grafana:         http://localhost:3000")
+    print("  MLflow:          http://localhost:5000")
     print("------------------------------------------------")
     try:
         webbrowser.open("http://localhost:8502")
@@ -146,27 +139,13 @@ def main() -> None:
         subprocess.run(cmd)
     except KeyboardInterrupt:
         print("\n\nCentro de control detenido.")
-        print("Apagando Uvicorn si estaba abierto...")
+        print("Apagando API...")
         if api_process.poll() is None:
             api_process.terminate()
             try:
                 api_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 api_process.kill()
-        print("Apagando Prediction UI...")
-        if pred_ui_process.poll() is None:
-            pred_ui_process.terminate()
-            try:
-                pred_ui_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                pred_ui_process.kill()
-        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
-            try:
-                cmdline = proc.info.get("cmdline") or []
-                if "uvicorn" in " ".join(cmdline):
-                    proc.kill()
-            except Exception:
-                pass
         print("Ejecutando docker-compose down...")
         try:
             subprocess.run(compose_cmd + ["down"], check=False)
