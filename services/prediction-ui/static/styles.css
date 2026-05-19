@@ -97,13 +97,7 @@ body {
   gap: var(--spacing-sm);
 }
 
-.header-logo {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--aws-orange) 0%, var(--aws-header-bg) 100%);
-  border-radius: var(--radius-sm);
-  display: inline-block;
-}
+
 
 .header-title {
   font-size: var(--font-size-heading);
@@ -138,6 +132,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  text-decoration: none;
 }
 
 .nav-btn:hover {
