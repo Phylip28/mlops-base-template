@@ -5,11 +5,16 @@ import time
 import streamlit as st
 
 from streamlit_app.components.cards import page_header
-from streamlit_app.utils import check_docker_service, get_docker_compose_cmd, log_event
+from streamlit_app.utils import (
+    SERVICE_LOGOS,
+    check_docker_service,
+    get_docker_compose_cmd,
+    log_event,
+)
 
 
 def render() -> None:
-    page_header("Docker", "Manage your container infrastructure")
+    page_header("Infrastructure", "Manage your container infrastructure")
 
     status_cols = st.columns(5)
     services_status = [
@@ -21,14 +26,32 @@ def render() -> None:
     ]
     for idx, (container, name, port) in enumerate(services_status):
         running = check_docker_service(container)
+        logo_url = SERVICE_LOGOS.get(name)
+        if logo_url:
+            logo_html = (
+                f'<div class="svc-icon">'
+                f'<img src="{logo_url}" alt="{name}" class="svc-logo-img" '
+                f"onerror=\"this.style.display='none';"
+                f"this.nextElementSibling.style.display='block'\" />"
+                f'<span class="svc-fallback" style="display:none">{name[0]}</span>'
+                f"</div>"
+            )
+        else:
+            logo_html = (
+                f'<div class="svc-icon"><span class="svc-fallback">{name[0]}</span></div>'
+            )
         with status_cols[idx]:
             st.markdown(
                 f"""
-            <div class="svc-card" style="text-align:center;">
-                <div class="svc-name">{name}</div>
-                <span class="{"svc-status-up" if running else "svc-status-down"}">
-                    {"Activo" if running else "Inactivo"}
-                </span>
+            <div class="svc-card">
+                <span class="svc-name">{name}</span>
+                {logo_html}
+                <div class="svc-info">
+                    <span class="svc-port">Puerto: {port}</span>
+                    <span class="{"svc-status-up" if running else "svc-status-down"}">
+                        Estado: {"Activo" if running else "Inactivo"}
+                    </span>
+                </div>
             </div>
             """,
                 unsafe_allow_html=True,

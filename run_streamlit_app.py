@@ -152,7 +152,7 @@ _NAV_SECTIONS: list[_NavSection] = [
     {
         "label": "Control",
         "items": [
-            {"key": "docker", "label": "Docker", "icon": _ICONS["docker"]},
+            {"key": "docker", "label": "Infrastructure", "icon": _ICONS["docker"]},
             {"key": "api", "label": "API", "icon": _ICONS["api"]},
             {"key": "traffic", "label": "Traffic", "icon": _ICONS["traffic"]},
         ],
