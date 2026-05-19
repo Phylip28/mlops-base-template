@@ -32,11 +32,7 @@ def nav_bar(active: str) -> str:
         <div class="header-content">
             <div class="header-brand">
                 <h1 class="header-title">MLOps Prediction UI</h1>
-                <span class="header-subtitle">Multi-Tenant Streaming Platform</span>
             </div>
-            <nav class="header-nav">
-                <a href="/"><button {predict_active}>Predict</button></a>
-            </nav>
         </div>
     </header>
     """
