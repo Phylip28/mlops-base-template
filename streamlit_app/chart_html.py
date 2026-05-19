@@ -185,7 +185,7 @@ canvas{{width:100%!important;height:100%!important;cursor:crosshair}}
       .then(function(r) {{ return r.json(); }})
       .then(function(all) {{
         var points = all[METRIC_KEY];
-        if (!points || !points.length) {{ historyLoaded = true; return; }}
+        if (!points || !points.length) {{ historyLoaded = true; poll(); startLoop(); return; }}
         seenKeys.clear();
         dataBuffer = [];
         for (var i = 0; i < points.length; i++) {{
@@ -193,8 +193,10 @@ canvas{{width:100%!important;height:100%!important;cursor:crosshair}}
         }}
         historyLoaded = true;
         tick();
+        poll();
+        startLoop();
       }})
-      .catch(function(){{ historyLoaded = true; }});
+      .catch(function(){{ historyLoaded = true; poll(); startLoop(); }});
   }}
 
   function handleRefresh() {{
@@ -211,16 +213,10 @@ canvas{{width:100%!important;height:100%!important;cursor:crosshair}}
     pollTimer = setInterval(poll, pollIntervalMs);
   }}
 
-  function startLoop() {{
-    pollTimer = setInterval(poll, pollIntervalMs);
-  }}
-
   document.getElementById('btn-refresh').addEventListener('click', handleRefresh);
   document.getElementById('sel-interval').addEventListener('change', function() {{ handleInterval(this.value); }});
 
   loadHistory();
-  poll();
-  startLoop();
 }})();
 </script>
 </body></html>"""

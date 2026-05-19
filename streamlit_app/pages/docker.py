@@ -48,7 +48,7 @@ def render() -> None:
                 {logo_html}
                 <div class="svc-info">
                     <span class="svc-port">Port: {port}</span>
-                    <span class="{"svc-status-up" if running else "svc-status-down"}">
+                    <span class="{"svc-status-online" if running else "svc-status-offline"}">
                         State: {"Online" if running else "Offline"}
                     </span>
                 </div>

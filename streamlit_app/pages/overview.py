@@ -81,7 +81,7 @@ SERVICE_CHARTS: list[_ChartCfg] = [
         "y_label": "STATUS %",
         "y_min": -5,
         "y_max": 105,
-        "height": 180,
+        "height": 240,
     },
     {
         "id": "chart_svc_mlflow",
@@ -91,7 +91,7 @@ SERVICE_CHARTS: list[_ChartCfg] = [
         "y_label": "STATUS %",
         "y_min": -5,
         "y_max": 105,
-        "height": 180,
+        "height": 240,
     },
     {
         "id": "chart_svc_minio",
@@ -101,7 +101,7 @@ SERVICE_CHARTS: list[_ChartCfg] = [
         "y_label": "STATUS %",
         "y_min": -5,
         "y_max": 105,
-        "height": 180,
+        "height": 240,
     },
     {
         "id": "chart_svc_prometheus",
@@ -111,7 +111,7 @@ SERVICE_CHARTS: list[_ChartCfg] = [
         "y_label": "STATUS %",
         "y_min": -5,
         "y_max": 105,
-        "height": 180,
+        "height": 240,
     },
     {
         "id": "chart_svc_grafana",
@@ -121,7 +121,7 @@ SERVICE_CHARTS: list[_ChartCfg] = [
         "y_label": "STATUS %",
         "y_min": -5,
         "y_max": 105,
-        "height": 180,
+        "height": 240,
     },
 ]
 
@@ -171,10 +171,31 @@ def render() -> None:
         unsafe_allow_html=True,
     )
 
-    # ── Row 2: 5 service charts ──
-    svc_cols = st.columns(len(SERVICE_CHARTS))
-    for i, cfg in enumerate(SERVICE_CHARTS):
-        with svc_cols[i]:
+    # ── Row 2: 5 service charts en 2 filas (3 + 2) ──
+    st.markdown("<div style='margin:24px 0 16px 0;'></div>", unsafe_allow_html=True)
+
+    row1_cols = st.columns(3)
+    for i, cfg in enumerate(SERVICE_CHARTS[:3]):
+        with row1_cols[i]:
+            st.iframe(
+                build_chart_html(
+                    chart_id=cfg["id"],
+                    title=cfg["title"],
+                    metric_key=cfg["metric_key"],
+                    color=cfg["color"],
+                    y_label=cfg["y_label"],
+                    y_min=cfg["y_min"],
+                    y_max=cfg["y_max"],
+                    height=cfg["height"],
+                ),
+                height=cfg["height"],
+            )
+
+    st.markdown("<div style='margin:24px 0;'></div>", unsafe_allow_html=True)
+
+    row2_cols = st.columns(2)
+    for i, cfg in enumerate(SERVICE_CHARTS[3:]):
+        with row2_cols[i]:
             st.iframe(
                 build_chart_html(
                     chart_id=cfg["id"],

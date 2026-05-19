@@ -488,13 +488,25 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     font-family: 'Satoshi', sans-serif;
     font-size: 11px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--aws-green);
 }
 .svc-status-down {
     font-family: 'Satoshi', sans-serif;
     font-size: 11px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--aws-red);
+}
+.svc-status-online {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--aws-green);
+}
+.svc-status-offline {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--aws-red);
 }
 
 /* ── Buttons ── */

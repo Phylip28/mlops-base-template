@@ -51,6 +51,4 @@ experiments/baselines/drift_alert.json
 .pytest_cache/
 
 # Others
-api.log
-e2e_demo.log
-streaming.log
+*.log

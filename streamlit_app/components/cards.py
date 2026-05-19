@@ -16,7 +16,7 @@ def metric_tile(value: str, label: str, color: str = "accent") -> None:
 def service_card(
     name: str, port: int, running: bool, logo_url: str | None = None
 ) -> None:
-    badge_cls = "svc-status-up" if running else "svc-status-down"
+    badge_cls = "svc-status-online" if running else "svc-status-offline"
     badge_txt = "Online" if running else "Offline"
     if logo_url:
         logo_html = (

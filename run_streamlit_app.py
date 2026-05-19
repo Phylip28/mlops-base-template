@@ -84,6 +84,9 @@ if "activity_log" not in st.session_state:
     st.session_state.activity_log = []
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = "overview"
+if "_first_load" not in st.session_state:
+    st.session_state._first_load = True
+    st.session_state.nav_page = "overview"
 
 # Sync from URL query param on initial load / refresh
 nav_qp = st.query_params.get("nav")
@@ -97,6 +100,9 @@ if nav_qp and nav_qp in {
     "links",
 }:
     st.session_state.nav_page = nav_qp
+elif st.session_state.get("_first_load"):
+    st.session_state.nav_page = "overview"
+    st.session_state._first_load = False
 
 page: str = st.session_state.nav_page
 
