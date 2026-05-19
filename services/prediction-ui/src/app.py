@@ -29,17 +29,17 @@ def nav_bar(active: str) -> str:
     )
     return f"""
     <header class="app-header">
-        <div style="display:flex;align-items:center;">
-            <span class="app-header-title">
-                <span class="logo-dot"></span>
-                Prediction UI
-                <span class="app-header-sub">MLOps Multi-Tenant</span>
-            </span>
+        <div class="header-content">
+            <div class="header-brand">
+                <span class="header-logo"></span>
+                <h1 class="header-title">MLOps Prediction UI</h1>
+                <span class="header-subtitle">Multi-Tenant Streaming Platform</span>
+            </div>
+            <nav class="header-nav">
+                <a href="/"><button {predict_active}>⚡ Predict</button></a>
+                <a href="/ingest"><button {ingest_active}>💧 Ingest</button></a>
+            </nav>
         </div>
-        <nav class="nav">
-            <a href="/"><button {predict_active}>⚡ Predict</button></a>
-            <a href="/ingest"><button {ingest_active}>💧 Ingest</button></a>
-        </nav>
     </header>
     """
 
@@ -74,7 +74,7 @@ PREDICT_PAGE = """<!DOCTYPE html>
     <main class="main">
         <div class="card">
             <div class="card-title">Make a Prediction</div>
-            <div class="form-group full" style="margin-bottom:16px;">
+            <div class="form-group full">
                 <label for="use_case">Use Case (Tenant)</label>
                 <select id="use_case">{UC_OPTIONS}</select>
             </div>
@@ -103,7 +103,7 @@ PREDICT_PAGE = """<!DOCTYPE html>
         </div>
         <div class="card">
             <div class="card-title">Prediction History</div>
-            <div class="history-section" style="overflow-x:auto;">
+            <div class="history-section">
                 <table class="history-table">
                     <thead>
                         <tr>
@@ -123,7 +123,6 @@ PREDICT_PAGE = """<!DOCTYPE html>
             </div>
         </div>
     </main>
-    <footer class="app-footer">MLOps Platform &mdash; Stream Learning</footer>
     <script>
         (function() {{
             const STORAGE_KEY = 'mlops_predict_history';
@@ -248,7 +247,7 @@ INGEST_PAGE = """<!DOCTYPE html>
     <main class="main">
         <div class="card">
             <div class="card-title">Ingest Streaming Data</div>
-            <div class="form-group full" style="margin-bottom:16px;">
+            <div class="form-group full">
                 <label for="use_case">Use Case (Tenant)</label>
                 <select id="use_case">{UC_OPTIONS}</select>
             </div>
@@ -266,8 +265,8 @@ INGEST_PAGE = """<!DOCTYPE html>
                     <input type="number" id="f_hora" placeholder="e.g. 14.5" step="0.1">
                 </div>
             </div>
-            <div class="form-group full" style="margin-bottom:16px;">
-                <label for="f_target">Target <span style="font-weight:400;color:var(--text-muted);">(optional — for retraining)</span></label>
+            <div class="form-group full">
+                <label for="f_target">Target <span class="text-muted">(optional — for retraining)</span></label>
                 <input type="number" id="f_target" placeholder="0 or 1. Leave blank for streaming-only." step="1">
             </div>
             <div class="btn-row">
@@ -281,7 +280,7 @@ INGEST_PAGE = """<!DOCTYPE html>
         </div>
         <div class="card">
             <div class="card-title">Ingest History</div>
-            <div class="history-section" style="overflow-x:auto;">
+            <div class="history-section">
                 <table class="history-table">
                     <thead>
                         <tr>
