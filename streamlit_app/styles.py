@@ -626,8 +626,15 @@ div[data-testid="stHorizontalBlock"] .stButton > button { width: 100% !important
     justify-content: center;
     margin: 0 auto 6px;
     transition: transform 0.15s ease;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
 }
 .link-card:hover .link-icon-badge { transform: scale(1.08); }
+.link-logo-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
 .link-initial {
     font-family: 'Cabinet Grotesk', sans-serif;
     font-size: 22px;
