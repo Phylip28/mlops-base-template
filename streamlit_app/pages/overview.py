@@ -1,150 +1,502 @@
-# ruff: noqa: E501
-from datetime import datetime
+"""Overview page — real-time F1 telemetry dashboard."""
 
+from __future__ import annotations
+
+import random
+from datetime import datetime, timedelta
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
+from plotly.subplots import make_subplots
 
-from streamlit_app.components.cards import page_header
-from streamlit_app.utils import (
-    SERVICES,
-    check_docker_service,
-    check_port,
-    check_prometheus_scrape,
-    refresh_services,
-)
+from streamlit_app.utils import log_event
 
 
-def _service_list_html() -> str:
-    rows = []
-    for container, name, port in SERVICES:
-        running = check_docker_service(container)
-        dot_cls = "up" if running else "down"
-        badge = (
-            '<span class="badge badge-up">ONLINE</span>'
-            if running
-            else '<span class="badge badge-down">OFFLINE</span>'
-        )
-        rows.append(
-            f"""<div style="display:flex;align-items:center;justify-content:space-between;
-            padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
-            <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-                <span class="svc-indicator {dot_cls}"></span>
-                <span style="font-family:'Satoshi',sans-serif;font-size:13px;
-                    font-weight:500;color:var(--text-body);">{name}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:10px;
-                    color:var(--text-muted);">:{port}</span>
-                {badge}
-            </div></div>"""
-        )
-    api_up = check_port(8000)
-    api_dot = "up" if api_up else "down"
-    api_badge = (
-        '<span class="badge badge-up">ONLINE</span>'
-        if api_up
-        else '<span class="badge badge-down">OFFLINE</span>'
+def _generate_time_series(
+    minutes: int = 60,
+    base_value: float = 80.0,
+    variance: float = 15.0,
+    noise: float = 5.0,
+    spike_prob: float = 0.02,
+    spike_magnitude: float = 40.0,
+) -> pd.DataFrame:
+    """Generate synthetic telemetry data with realistic patterns."""
+    now = datetime.now()
+    timestamps = [now - timedelta(minutes=i) for i in range(minutes, 0, -1)]
+
+    values = []
+    current = base_value
+    for _ in range(minutes):
+        drift = (base_value - current) * 0.1
+        change = np.random.normal(drift, variance * 0.15)
+        current += change
+        if random.random() < spike_prob:
+            current += (
+                random.choice([-1, 1]) * spike_magnitude * random.random()
+            )
+        current += np.random.normal(0, noise)
+        current = max(0, min(100, current))
+        values.append(current)
+
+    return pd.DataFrame({"timestamp": timestamps, "value": values})
+
+
+def _hex_to_rgba(hex_color: str, alpha: float) -> str:
+    """Convert hex color to rgba string."""
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
+def _axis_base() -> dict[str, Any]:
+    """Shared axis styling for F1 charts."""
+    return dict(
+        showgrid=True,
+        gridcolor="rgba(42,47,54,0.5)",
+        gridwidth=0.5,
+        linecolor="#2a2f36",
+        linewidth=1,
+        tickfont=dict(
+            family="JetBrains Mono, monospace",
+            size=10,
+            color="#5f6b7a",
+        ),
+        tickformat="%H:%M",
     )
-    rows.append(
-        f"""<div style="display:flex;align-items:center;justify-content:space-between;
-        padding:10px 14px;gap:12px;">
-        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-            <span class="svc-indicator {api_dot}"></span>
-            <span style="font-family:'Satoshi',sans-serif;font-size:13px;
-                font-weight:500;color:var(--text-body);">FastAPI</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;
-                color:var(--text-muted);">:8000</span>
-            {api_badge}
-        </div></div>"""
+
+
+def _animated_f1_line_chart(
+    df: pd.DataFrame,
+    title: str,
+    color: str,
+    y_label: str,
+    y_range: tuple[float, float] | None = None,
+    height: int = 260,
+    frame_duration: int = 40,
+) -> go.Figure:
+    """Build an animated F1-telemetry-style line chart."""
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=[df["timestamp"].iloc[0]],
+            y=[df["value"].iloc[0]],
+            mode="lines",
+            line=dict(color=color, width=2),
+            fill="tozeroy",
+            fillcolor=_hex_to_rgba(color, 0.08),
+            hovertemplate="%{x|%H:%M:%S}<br>%{y:.1f}<extra></extra>",
+            name=title,
+        )
     )
-    return "".join(rows)
+
+    fig.add_trace(
+        go.Scatter(
+            x=[df["timestamp"].iloc[0]],
+            y=[df["value"].iloc[0]],
+            mode="markers",
+            marker=dict(color=color, size=10, symbol="circle"),
+            showlegend=False,
+            hoverinfo="skip",
+        )
+    )
+
+    frames = []
+    for i in range(2, len(df) + 1):
+        frames.append(
+            go.Frame(
+                data=[
+                    go.Scatter(
+                        x=df["timestamp"][:i],
+                        y=df["value"][:i],
+                        mode="lines",
+                        line=dict(color=color, width=2),
+                        fill="tozeroy",
+                        fillcolor=_hex_to_rgba(color, 0.08),
+                        hovertemplate=(
+                            "%{x|%H:%M:%S}<br>%{y:.1f}<extra></extra>"
+                        ),
+                    ),
+                    go.Scatter(
+                        x=[df["timestamp"].iloc[i - 1]],
+                        y=[df["value"].iloc[i - 1]],
+                        mode="markers",
+                        marker=dict(color=color, size=10, symbol="circle"),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    ),
+                ],
+                name=str(i),
+            )
+        )
+
+    fig.frames = frames
+
+    fig.update_layout(
+        title=dict(
+            text=title,
+            font=dict(
+                family="JetBrains Mono, monospace",
+                size=13,
+                color="#d5dbdb",
+            ),
+            x=0,
+            xanchor="left",
+        ),
+        margin=dict(l=40, r=20, t=50, b=30),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=height,
+        showlegend=False,
+        xaxis=dict(
+            **_axis_base(),
+            range=[df["timestamp"].iloc[0], df["timestamp"].iloc[-1]],
+        ),
+        yaxis=dict(
+            **_axis_base(),
+            title=dict(text=y_label, font=dict(size=10, color="#5f6b7a")),
+            range=y_range,
+        ),
+        hovermode="x unified",
+        hoverlabel=dict(
+            bgcolor="#1e242b",
+            bordercolor="#2a2f36",
+            font=dict(
+                family="JetBrains Mono, monospace",
+                size=11,
+                color="#d5dbdb",
+            ),
+        ),
+        updatemenus=[
+            {
+                "type": "buttons",
+                "direction": "left",
+                "showactive": False,
+                "x": 0.05,
+                "y": 1.12,
+                "xanchor": "left",
+                "yanchor": "top",
+                "pad": {"t": 0, "r": 10},
+                "buttons": [
+                    {
+                        "label": "▶  Play",
+                        "method": "animate",
+                        "args": [
+                            None,
+                            {
+                                "frame": {
+                                    "duration": frame_duration,
+                                    "redraw": False,
+                                },
+                                "fromcurrent": True,
+                                "transition": {"duration": 0},
+                                "mode": "immediate",
+                            },
+                        ],
+                    },
+                    {
+                        "label": "⏸  Pause",
+                        "method": "animate",
+                        "args": [
+                            [None],
+                            {
+                                "frame": {"duration": 0, "redraw": False},
+                                "mode": "immediate",
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                    },
+                ],
+            }
+        ],
+    )
+
+    return fig
 
 
-def _log_preview_html() -> str:
-    entries = st.session_state.activity_log[-8:]
-    if not entries:
-        return (
-            '<div class="log-entry">'
-            '<span class="log-ts">--:--:--</span>'
-            '<span class="log-tag log-tag-SYS">SYS</span>'
-            '<span class="log-msg">No events recorded</span>'
-            "</div>"
+def _animated_timeline(
+    dfs: list[pd.DataFrame],
+    titles: list[str],
+    colors: list[str],
+    height: int = 520,
+    frame_duration: int = 40,
+) -> go.Figure:
+    """Build an animated multi-service timeline."""
+    fig = make_subplots(
+        rows=3,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.08,
+        row_heights=[0.35, 0.35, 0.30],
+        subplot_titles=titles,
+    )
+
+    for i in range(3):
+        fig.add_trace(
+            go.Scatter(
+                x=[dfs[i]["timestamp"].iloc[0]],
+                y=[dfs[i]["value"].iloc[0]],
+                mode="lines",
+                line=dict(color=colors[i], width=1.5),
+                fill="tozeroy",
+                fillcolor=_hex_to_rgba(colors[i], 0.06),
+                hovertemplate="%{x|%H:%M:%S}<br>%{y:.1f}%<extra></extra>",
+                name=titles[i],
+            ),
+            row=i + 1,
+            col=1,
         )
-    parts = []
-    for ts, tag, msg, _level in reversed(entries):
-        parts.append(
-            f'<div class="log-entry">'
-            f'<span class="log-ts">{ts}</span>'
-            f'<span class="log-tag log-tag-{tag}">{tag}</span>'
-            f'<span class="log-msg">{msg}</span>'
-            f"</div>"
+
+    frames = []
+    max_len = min(len(df) for df in dfs)
+    for frame_idx in range(2, max_len + 1):
+        frame_data = []
+        for i in range(3):
+            frame_data.append(
+                go.Scatter(
+                    x=dfs[i]["timestamp"][:frame_idx],
+                    y=dfs[i]["value"][:frame_idx],
+                    mode="lines",
+                    line=dict(color=colors[i], width=1.5),
+                    fill="tozeroy",
+                    fillcolor=_hex_to_rgba(colors[i], 0.06),
+                    hovertemplate=(
+                        "%{x|%H:%M:%S}<br>%{y:.1f}%<extra></extra>"
+                    ),
+                )
+            )
+        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
+
+    fig.frames = frames
+
+    fig.update_layout(
+        margin=dict(l=50, r=20, t=60, b=30),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=height,
+        showlegend=False,
+        hovermode="x unified",
+        hoverlabel=dict(
+            bgcolor="#1e242b",
+            bordercolor="#2a2f36",
+            font=dict(
+                family="JetBrains Mono, monospace",
+                size=11,
+                color="#d5dbdb",
+            ),
+        ),
+        updatemenus=[
+            {
+                "type": "buttons",
+                "direction": "left",
+                "showactive": False,
+                "x": 0.05,
+                "y": 1.08,
+                "xanchor": "left",
+                "yanchor": "top",
+                "pad": {"t": 0, "r": 10},
+                "buttons": [
+                    {
+                        "label": "▶  Play",
+                        "method": "animate",
+                        "args": [
+                            None,
+                            {
+                                "frame": {
+                                    "duration": frame_duration,
+                                    "redraw": False,
+                                },
+                                "fromcurrent": True,
+                                "transition": {"duration": 0},
+                                "mode": "immediate",
+                            },
+                        ],
+                    },
+                    {
+                        "label": "⏸  Pause",
+                        "method": "animate",
+                        "args": [
+                            [None],
+                            {
+                                "frame": {"duration": 0, "redraw": False},
+                                "mode": "immediate",
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                    },
+                ],
+            }
+        ],
+    )
+
+    x_min = min(df["timestamp"].iloc[0] for df in dfs)
+    x_max = max(df["timestamp"].iloc[-1] for df in dfs)
+    for i in range(1, 4):
+        fig.update_xaxes(
+            showgrid=True,
+            gridcolor="rgba(42,47,54,0.5)",
+            gridwidth=0.5,
+            linecolor="#2a2f36",
+            tickfont=dict(
+                family="JetBrains Mono, monospace",
+                size=9,
+                color="#5f6b7a",
+            ),
+            tickformat="%H:%M",
+            range=[x_min, x_max],
+            row=i,
+            col=1,
         )
-    return "".join(parts)
+        fig.update_yaxes(
+            showgrid=True,
+            gridcolor="rgba(42,47,54,0.5)",
+            gridwidth=0.5,
+            linecolor="#2a2f36",
+            tickfont=dict(
+                family="JetBrains Mono, monospace",
+                size=9,
+                color="#5f6b7a",
+            ),
+            range=(50, 105),
+            row=i,
+            col=1,
+        )
+
+    for annotation in fig["layout"]["annotations"]:
+        annotation["font"] = dict(
+            family="JetBrains Mono, monospace", size=11, color="#5f6b7a"
+        )
+        annotation["x"] = 0
+        annotation["xanchor"] = "left"
+
+    return fig
 
 
 def render() -> None:
-    page_header("Overview", "")
+    """Render the animated Overview page."""
+    log_event("SYS", "Overview dashboard viewed", "info")
 
-    now = datetime.now()
-    svcs = refresh_services()
-    prom_up, prom_err = check_prometheus_scrape()
-    all_up = all(v["running"] for v in svcs.values()) and prom_up
-    health_class = "health-ok" if all_up else "health-warn"
-    health_label = "All systems nominal" if all_up else "Degraded mode"
-    prom_label = "Prometheus OK" if prom_up else f"Prometheus: {prom_err[:25]}"
-
-    # ── Hero ──
     st.markdown(
-        f"""<div class="hero-banner">
-        <div class="hero-left">
-            <div class="hero-title">MLOps Command Center</div>
-            <div class="hero-subtitle">Multi-Tenant Fraud Detection · Stream Learning Platform</div>
-        </div>
-        <div class="hero-right">
-            <div>
-                <div class="hero-clock">{now.strftime("%H:%M:%S")}</div>
-                <div class="hero-date">{now.strftime("%A, %d %B %Y")}</div>
-                <div class="health-badge {health_class}">
-                    <span class="health-dot"></span>{health_label}
-                </div>
-                <div style="margin-top:5px;font-family:'JetBrains Mono',monospace;
-                    font-size:10px;color:#64748b;">{prom_label}</div>
+        """
+        <div class="page-header">
+            <div class="page-title">Overview</div>
+            <div class="page-subtitle">
+                Real-time platform telemetry
             </div>
-            <button class="refresh-btn" onclick="location.reload()">↻</button>
-        </div></div>""",
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    # ── Metric Tiles ──
+    # ── Row 1: Uptime & Latency ──
+    col1, col2 = st.columns(2)
+
+    with col1:
+        df_uptime = _generate_time_series(
+            minutes=120, base_value=95, variance=8, noise=2, spike_prob=0.03
+        )
+        fig = _animated_f1_line_chart(
+            df_uptime,
+            title="Platform Uptime",
+            color="#00a1c9",
+            y_label="UPTIME %",
+            y_range=(70, 105),
+        )
+        st.plotly_chart(
+            fig, use_container_width=True, config={"displayModeBar": False}
+        )
+
+    with col2:
+        df_latency = _generate_time_series(
+            minutes=120,
+            base_value=45,
+            variance=20,
+            noise=5,
+            spike_prob=0.05,
+            spike_magnitude=80,
+        )
+        fig = _animated_f1_line_chart(
+            df_latency,
+            title="API Latency",
+            color="#ff9900",
+            y_label="MS",
+            y_range=(0, 200),
+        )
+        st.plotly_chart(
+            fig, use_container_width=True, config={"displayModeBar": False}
+        )
+
+    # ── Row 2: Throughput & Error Rate ──
+    col1, col2 = st.columns(2)
+
+    with col1:
+        df_rps = _generate_time_series(
+            minutes=120,
+            base_value=120,
+            variance=30,
+            noise=10,
+            spike_prob=0.04,
+        )
+        fig = _animated_f1_line_chart(
+            df_rps,
+            title="Requests / Second",
+            color="#44b9d6",
+            y_label="RPS",
+            y_range=(0, 250),
+        )
+        st.plotly_chart(
+            fig, use_container_width=True, config={"displayModeBar": False}
+        )
+
+    with col2:
+        df_errors = _generate_time_series(
+            minutes=120,
+            base_value=2,
+            variance=3,
+            noise=1,
+            spike_prob=0.08,
+            spike_magnitude=15,
+        )
+        fig = _animated_f1_line_chart(
+            df_errors,
+            title="Error Rate",
+            color="#d13212",
+            y_label="ERR %",
+            y_range=(0, 25),
+        )
+        st.plotly_chart(
+            fig, use_container_width=True, config={"displayModeBar": False}
+        )
+
+    # ── Row 3: Multi-service animated timeline ──
+    st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
     st.markdown(
-        '<div class="metric-row">'
-        '<div class="metric-tile accent"><div class="metric-value">5</div><div class="metric-label">Total Services</div></div>'
-        '<div class="metric-tile green"><div class="metric-value">'
-        + str(len(st.session_state.activity_log))
-        + '</div><div class="metric-label">Log Events</div></div>'
-        '<div class="metric-tile purple"><div class="metric-value">2</div><div class="metric-label">Docker Groups</div></div>'
-        '<div class="metric-tile amber"><div class="metric-value">30</div><div class="metric-label">Retrain Threshold</div></div>'
-        '<div class="metric-tile red"><div class="metric-value">6</div><div class="metric-label">Endpoints</div></div>'
-        "</div>",
+        "<div style='font-family:Cabinet Grotesk,sans-serif; "
+        "font-size:12px; font-weight:600; color:#5f6b7a; "
+        "text-transform:uppercase; letter-spacing:1px; "
+        "margin-bottom:12px;'>Service Status Timeline</div>",
         unsafe_allow_html=True,
     )
 
-    # ── Two-column: Infrastructure + Activity ──
-    svc_html = _service_list_html()
-    log_html = _log_preview_html()
+    service_configs = [
+        ("PostgreSQL", "#1d8102", 95, 5),
+        ("FastAPI", "#00a1c9", 98, 3),
+        ("MLflow", "#ff9900", 88, 12),
+    ]
+    dfs = [
+        _generate_time_series(
+            minutes=120, base_value=base, variance=var, noise=2
+        )
+        for _name, _color, base, var in service_configs
+    ]
+    titles = [c[0] for c in service_configs]
+    colors = [c[1] for c in service_configs]
 
-    st.markdown(
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'
-        f'<div class="card card-striped" style="min-height:310px;">'
-        f'<div class="section-title">Infrastructure Status</div>'
-        f"{svc_html}</div>"
-        f'<div class="card card-striped purple" style="min-height:310px;">'
-        f'<div class="section-title">Recent Activity</div>'
-        f'<div style="max-height:240px;overflow-y:auto;">{log_html}</div></div>'
-        "</div>",
-        unsafe_allow_html=True,
+    fig = _animated_timeline(dfs, titles, colors)
+    st.plotly_chart(
+        fig, use_container_width=True, config={"displayModeBar": False}
     )
-
-
-render()

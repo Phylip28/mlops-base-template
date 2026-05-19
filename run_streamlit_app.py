@@ -89,30 +89,27 @@ with st.sidebar:
         '<div class="sidebar-section-label">Monitor</div>',
         unsafe_allow_html=True,
     )
-    if st.button("Overview", key="nav_overview", use_container_width=True):
+    if st.button("⧉  Overview", key="nav_overview", use_container_width=True):
         st.session_state.nav_page = "overview"
         st.rerun()
-    if st.button("Services", key="nav_services", use_container_width=True):
+    if st.button("◈  Services", key="nav_services", use_container_width=True):
         st.session_state.nav_page = "services"
         st.rerun()
-    if st.button("Activity", key="nav_activity", use_container_width=True):
+    if st.button("◉  Activity", key="nav_activity", use_container_width=True):
         st.session_state.nav_page = "activity"
-        st.rerun()
-    if st.button("Telemetry", key="nav_telemetry", use_container_width=True):
-        st.session_state.nav_page = "telemetry"
         st.rerun()
 
     st.markdown(
         '<div class="sidebar-section-label">Control</div>',
         unsafe_allow_html=True,
     )
-    if st.button("Docker", key="nav_docker", use_container_width=True):
+    if st.button("▣  Docker", key="nav_docker", use_container_width=True):
         st.session_state.nav_page = "docker"
         st.rerun()
-    if st.button("API", key="nav_api", use_container_width=True):
+    if st.button("▶\ufe0e  API", key="nav_api", use_container_width=True):
         st.session_state.nav_page = "api"
         st.rerun()
-    if st.button("Traffic", key="nav_traffic", use_container_width=True):
+    if st.button("◊  Traffic", key="nav_traffic", use_container_width=True):
         st.session_state.nav_page = "traffic"
         st.rerun()
 
@@ -120,7 +117,7 @@ with st.sidebar:
         '<div class="sidebar-section-label">Access</div>',
         unsafe_allow_html=True,
     )
-    if st.button("Links", key="nav_links", use_container_width=True):
+    if st.button("∞  Links", key="nav_links", use_container_width=True):
         st.session_state.nav_page = "links"
         st.rerun()
 
@@ -133,14 +130,12 @@ from streamlit_app.pages.docker import render as docker_render
 from streamlit_app.pages.links import render as links_render
 from streamlit_app.pages.overview import render as overview_render
 from streamlit_app.pages.services import render as services_render
-from streamlit_app.pages.telemetry import render as telemetry_render
 from streamlit_app.pages.traffic import render as traffic_render
 
 renderers: dict[str, Callable[[], None]] = {
     "overview": overview_render,
     "services": services_render,
     "activity": activity_render,
-    "telemetry": telemetry_render,
     "docker": docker_render,
     "api": api_render,
     "traffic": traffic_render,
