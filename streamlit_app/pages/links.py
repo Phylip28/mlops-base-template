@@ -21,10 +21,10 @@ def render() -> None:
     for idx, (icon, name, url) in enumerate(links):
         with cols[idx]:
             st.markdown(
-                f'<div class="link-card" onclick="window.open(\'{url}\',\'_blank\')">'
+                f"<div class=\"link-card\" onclick=\"window.open('{url}','_blank')\">"
                 f'<div class="link-icon">{icon}</div>'
                 f'<div class="link-name">{name}</div>'
-                f'</div>',
+                f"</div>",
                 unsafe_allow_html=True,
             )
     st.markdown("</div>", unsafe_allow_html=True)

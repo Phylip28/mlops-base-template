@@ -27,22 +27,26 @@ def render() -> None:
             <div class="svc-card" style="text-align:center;">
                 <div class="svc-name" style="font-size:12px;">{name}</div>
                 <div style="margin:8px 0;">
-                    <span class="svc-indicator {'up' if running else 'down'}"
+                    <span class="svc-indicator {"up" if running else "down"}"
                     style="display:inline-block;"></span>
                 </div>
-                <span class="badge {'badge-up' if running else 'badge-down'}">
-                    {'ONLINE' if running else 'OFFLINE'}
+                <span class="badge {"badge-up" if running else "badge-down"}">
+                    {"ONLINE" if running else "OFFLINE"}
                 </span>
             </div>
             """,
                 unsafe_allow_html=True,
             )
 
-    st.markdown("<hr style='border-color:var(--border);margin:24px 0;'>", unsafe_allow_html=True)
+    st.markdown(
+        "<hr style='border-color:var(--border);margin:24px 0;'>", unsafe_allow_html=True
+    )
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        if st.button("▶  Start All", key="docker_start", use_container_width=True, type="primary"):
+        if st.button(
+            "▶  Start All", key="docker_start", use_container_width=True, type="primary"
+        ):
             with st.spinner("Starting containers..."):
                 try:
                     cmd = get_docker_compose_cmd() + ["up", "-d"]

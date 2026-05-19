@@ -50,8 +50,7 @@ div[data-testid="stStatusWidget"] { display: none !important; }
 section[data-testid="stSidebar"] {
     background: var(--bg-sidebar) !important;
     border-right: 1px solid var(--border) !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
+    min-width: 230px !important;
     padding-top: 0 !important;
 }
 section[data-testid="stSidebar"] > div:first-child {
@@ -123,9 +122,6 @@ section[data-testid="stSidebar"] div[data-testid="stImage"] {
 }
 
 /* ── Custom Sidebar ── */
-.sidebar {
-    padding: 0;
-}
 .sidebar-brand {
     padding: 24px 20px 20px;
     border-bottom: 1px solid var(--border);

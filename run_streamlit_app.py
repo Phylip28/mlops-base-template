@@ -5,6 +5,7 @@ st.set_page_config(
     page_title="MLOps Command Center",
     layout="wide",
     page_icon="🛰️",
+    initial_sidebar_state="expanded",
 )
 
 from streamlit_app.styles import CSS
@@ -34,38 +35,31 @@ with st.sidebar:
 dashboard = st.Page(
     "streamlit_app/pages/overview.py",
     title="Overview",
-    icon="📊",
     default=True,
 )
 services = st.Page(
     "streamlit_app/pages/services.py",
     title="Services",
-    icon="⚙️",
 )
 activity = st.Page(
     "streamlit_app/pages/activity.py",
     title="Activity",
-    icon="📋",
 )
 docker = st.Page(
     "streamlit_app/pages/docker.py",
     title="Docker",
-    icon="🐳",
 )
 api_page = st.Page(
     "streamlit_app/pages/api.py",
     title="API",
-    icon="🌐",
 )
 traffic = st.Page(
     "streamlit_app/pages/traffic.py",
     title="Traffic",
-    icon="📡",
 )
 links = st.Page(
     "streamlit_app/pages/links.py",
     title="Links",
-    icon="🔗",
 )
 
 nav = st.navigation(

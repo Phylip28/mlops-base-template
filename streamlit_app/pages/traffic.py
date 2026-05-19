@@ -29,23 +29,32 @@ def render() -> None:
 
     cols = st.columns(4)
     with cols[0]:
-        if st.button("⚡  E2E Burst", key="traffic_e2e", use_container_width=True, type="primary"):
+        if st.button(
+            "⚡  E2E Burst", key="traffic_e2e", use_container_width=True, type="primary"
+        ):
             py = get_python()
             with open("e2e_demo.log", "w", encoding="utf-8") as log_file:
                 subprocess.Popen(
                     [py, "scripts/e2e_demo_mlflow.py"],
-                    stdout=log_file, stderr=subprocess.STDOUT,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
                 )
             log_event("GEN", "E2E burst triggered — 35 events", "info")
             st.rerun()
 
     with cols[1]:
-        if st.button("▶  Start Stream", key="traffic_start", use_container_width=True, type="primary"):
+        if st.button(
+            "▶  Start Stream",
+            key="traffic_start",
+            use_container_width=True,
+            type="primary",
+        ):
             py = get_python()
             with open("streaming.log", "w", encoding="utf-8") as log_file:
                 subprocess.Popen(
                     [py, "scripts/simulate_multi_streaming.py"],
-                    stdout=log_file, stderr=subprocess.STDOUT,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
                 )
             log_event("GEN", "Streaming simulation started", "info")
             st.rerun()

@@ -12,11 +12,11 @@ def render() -> None:
     st.markdown(
         '<div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">'
         '<span style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-muted);">'
-        f'{len(log_entries)} events</span>'
+        f"{len(log_entries)} events</span>"
         '<span style="flex:1;"></span>'
         '<button class="refresh-btn" onclick="location.reload()" style="width:auto;padding:4px 12px;font-size:12px;">'
-        '↻ Refresh</button>'
-        '</div>',
+        "↻ Refresh</button>"
+        "</div>",
         unsafe_allow_html=True,
     )
 
