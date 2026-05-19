@@ -32,6 +32,27 @@ from streamlit_app.utils import log_event
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+# ── Navigation flash prevention ──
+st.markdown(
+    """
+    <style>
+    /* Override Streamlit default white background at document level */
+    div[data-testid="stMain"] {
+        background-color: #0f141a !important;
+    }
+    /* Smooth fade transition for page content */
+    section.main > div {
+        animation: pageFadeIn 0.1s ease-out;
+    }
+    @keyframes pageFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ── Force sidebar always open ──
 st.markdown(
     """

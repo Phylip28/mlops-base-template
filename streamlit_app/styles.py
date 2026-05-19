@@ -136,7 +136,7 @@ div[data-testid="stSidebarCollapseButton"] {
     background: rgba(0,161,201,0.08);
     color: var(--text-primary);
     border-left-color: var(--accent);
-    font-weight: 600;
+    font-weight: 700;
 }
 .sidebar-nav-link--active:hover {
     border-left-color: var(--accent);
@@ -293,7 +293,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     border-radius: var(--radius-pill);
     font-family: 'Satoshi', sans-serif;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 6px;
 }
 .health-ok    { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(29,129,2,0.2); }
@@ -337,7 +337,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .card-title {
     font-family: 'Cabinet Grotesk', sans-serif;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -487,25 +487,25 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .svc-status-up {
     font-family: 'Satoshi', sans-serif;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--aws-green);
 }
 .svc-status-down {
     font-family: 'Satoshi', sans-serif;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--aws-red);
 }
 .svc-status-online {
     font-family: 'Satoshi', sans-serif;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--aws-green);
 }
 .svc-status-offline {
     font-family: 'Satoshi', sans-serif;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--aws-red);
 }
 
@@ -514,7 +514,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 .stButton > button {
     font-family: 'Satoshi', sans-serif !important;
     font-size: 12px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     border-radius: var(--radius-btn) !important;
     padding: 10px 18px !important;
     transition: all 0.15s ease !important;
@@ -677,7 +677,7 @@ div[data-testid="stHorizontalBlock"] .stButton > button { width: 100% !important
 .section-title {
     font-family: 'Cabinet Grotesk', sans-serif;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--text-muted);

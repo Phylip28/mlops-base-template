@@ -16,13 +16,28 @@ def render() -> None:
     api_up = svcs.get("FastAPI", {}).get("running", False)
 
     st.markdown(
+        """
+        <style>
+        .api-button-row .stButton > button {
+            height: 36px !important;
+            padding: 8px 16px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.3px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
         f"""
     <div style="max-width:360px;">
     <div class="card card-striped {"green" if api_up else "red"}">
         <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
                 <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:16px;
-                    font-weight:600;color:var(--text-primary);">FastAPI Server</div>
+                    font-weight:700;color:var(--text-primary);">FastAPI Server</div>
                 <div style="font-family:'JetBrains Mono',monospace;font-size:11px;
                     color:var(--text-muted);margin-top:4px;">:8000</div>
             </div>
@@ -36,10 +51,11 @@ def render() -> None:
         unsafe_allow_html=True,
     )
 
+    st.markdown('<div class="api-button-row">', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
         if st.button(
-            "▶  Start API", key="api_start", use_container_width=True, type="primary"
+            "▶ Start", key="api_start", use_container_width=True, type="primary"
         ):
             if check_port(8000):
                 st.warning("Port 8000 already in use")
@@ -64,7 +80,7 @@ def render() -> None:
     with c2:
         if api_up:
             if st.button(
-                "■  Stop API",
+                "■ Stop",
                 key="api_stop",
                 use_container_width=True,
                 type="secondary",
@@ -78,6 +94,7 @@ def render() -> None:
                         pass
                 log_event("API", "FastAPI stopped", "info")
                 st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 render()
