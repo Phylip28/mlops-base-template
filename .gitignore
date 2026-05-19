@@ -52,3 +52,5 @@ experiments/baselines/drift_alert.json
 
 # Others
 api.log
+e2e_demo.log
+streaming.log
