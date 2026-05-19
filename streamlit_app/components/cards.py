@@ -17,7 +17,7 @@ def service_card(
     name: str, port: int, running: bool, logo_url: str | None = None
 ) -> None:
     badge_cls = "svc-status-up" if running else "svc-status-down"
-    badge_txt = "Activo" if running else "Inactivo"
+    badge_txt = "Online" if running else "Offline"
     if logo_url:
         logo_html = (
             f'<div class="svc-icon">'
@@ -37,8 +37,8 @@ def service_card(
         <span class="svc-name">{name}</span>
         {logo_html}
         <div class="svc-info">
-            <span class="svc-port">Puerto: {port}</span>
-            <span class="{badge_cls}">Estado: {badge_txt}</span>
+            <span class="svc-port">Port: {port}</span>
+            <span class="{badge_cls}">State: {badge_txt}</span>
         </div>
     </div>
     """,

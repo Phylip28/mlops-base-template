@@ -17,6 +17,7 @@ def render() -> None:
 
     st.markdown(
         f"""
+    <div style="max-width:360px;">
     <div class="card card-striped {"green" if api_up else "red"}">
         <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
@@ -26,9 +27,10 @@ def render() -> None:
                     color:var(--text-muted);margin-top:4px;">:8000</div>
             </div>
             <span class="{"svc-status-up" if api_up else "svc-status-down"}">
-                {"Activo" if api_up else "Inactivo"}
+                {"Online" if api_up else "Offline"}
             </span>
         </div>
+    </div>
     </div>
     """,
         unsafe_allow_html=True,
