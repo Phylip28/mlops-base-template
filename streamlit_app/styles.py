@@ -117,76 +117,80 @@ div[data-testid="stSidebarCollapseButton"] {
     padding: 0 8px;
 }
 
-.sidebar-nav-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
-    border-radius: 6px;
-    text-decoration: none !important;
-    color: var(--text-body);
-    font-family: 'Satoshi', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.12s ease;
-    border-left: 2px solid transparent;
-    margin-bottom: 1px;
-}
-.sidebar-nav-link:hover {
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    border-left-color: var(--border-hover);
-}
-
-.sidebar-nav-link--active {
-    background: rgba(0,161,201,0.08);
-    color: var(--text-primary);
-    border-left-color: var(--accent);
-    font-weight: 600;
-}
-.sidebar-nav-link--active:hover {
-    border-left-color: var(--accent);
-    background: rgba(0,161,201,0.12);
-}
-
+/* Icon wrapper in sidebar nav columns */
 .sidebar-nav-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     flex-shrink: 0;
     color: var(--text-muted);
     transition: color 0.12s ease;
-}
-.sidebar-nav-link:hover .sidebar-nav-icon,
-.sidebar-nav-link--active .sidebar-nav-icon {
-    color: var(--accent);
+    margin-top: 1px;
 }
 
-.sidebar-nav-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Generic sidebar button fallback */
-section[data-testid="stSidebar"] .stButton > button {
+/* Nav buttons in sidebar — styled as flat nav items */
+section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
     font-family: 'Satoshi', sans-serif !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: 500 !important;
     color: var(--text-body) !important;
     background: transparent !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-btn) !important;
-    padding: 8px 14px !important;
-    transition: all 0.15s ease !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 9px 10px !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    transition: all 0.12s ease !important;
     box-shadow: none !important;
+    border-left: 2px solid transparent !important;
+    height: auto !important;
+    min-height: unset !important;
 }
-section[data-testid="stSidebar"] .stButton > button:hover {
+section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
     background: var(--bg-surface) !important;
     color: var(--text-primary) !important;
     border-color: var(--border-hover) !important;
+}
+
+/* Active nav button */
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    font-family: 'Satoshi', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    background: rgba(0,161,201,0.08) !important;
+    border: none !important;
+    border-left: 2px solid var(--accent) !important;
+    border-radius: 6px !important;
+    padding: 9px 10px !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    transition: all 0.12s ease !important;
+    box-shadow: none !important;
+    height: auto !important;
+    min-height: unset !important;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+    background: rgba(0,161,201,0.14) !important;
+    border-color: var(--accent) !important;
+}
+
+/* Tighten sidebar column gaps for nav rows */
+section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] {
+    gap: 2px !important;
+    margin-bottom: 1px;
+}
+
+/* Active nav row — accent left bar visible */
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] ~ .sidebar-nav-icon,
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    /* icon color for active row handled via sibling selector */
+}
+/* Active icon color — when primary button is in the row, color the icon */
+section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"]:has(button[kind="primary"]) .sidebar-nav-icon {
+    color: var(--accent);
 }
 
 /* ── Custom Sidebar ── */
