@@ -142,7 +142,44 @@ def container_status(container_name: str) -> float:
         return 0.0
 
 
+_CONTAINER_CPU_NAMES = [
+    "mlops_postgres",
+    "mlops_mlflow",
+    "mlops_minio",
+    "mlops_prometheus",
+    "mlops_grafana",
+]
+
+
+def container_cpu_stats() -> dict[str, float]:
+    """Return CPU % for infrastructure containers via a single docker stats call."""
+    out: dict[str, float] = {name: 0.0 for name in _CONTAINER_CPU_NAMES}
+    try:
+        result = subprocess.run(
+            ["docker", "stats", "--no-stream", "--format", "{{.Name}}|{{.CPUPerc}}"]
+            + _CONTAINER_CPU_NAMES,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        for line in result.stdout.splitlines():
+            if "|" not in line:
+                continue
+            name, raw = line.split("|", 1)
+            name = name.strip()
+            raw = raw.strip().replace("%", "")
+            if name in out and raw != "--":
+                try:
+                    out[name] = float(raw)
+                except ValueError:
+                    out[name] = 0.0
+    except Exception:
+        pass
+    return out
+
+
 def collect_snapshot() -> dict[str, float]:
+    cpu_map = container_cpu_stats()
     return {
         "api_uptime": api_uptime(),
         "api_latency_ms": api_latency_ms(),
@@ -155,4 +192,9 @@ def collect_snapshot() -> dict[str, float]:
         "minio_status": container_status("mlops_minio"),
         "prometheus_status": container_status("mlops_prometheus"),
         "grafana_status": container_status("mlops_grafana"),
+        "pg_cpu": cpu_map["mlops_postgres"],
+        "mlflow_cpu": cpu_map["mlops_mlflow"],
+        "minio_cpu": cpu_map["mlops_minio"],
+        "prometheus_cpu": cpu_map["mlops_prometheus"],
+        "grafana_cpu": cpu_map["mlops_grafana"],
     }
