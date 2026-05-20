@@ -116,83 +116,48 @@ div[data-testid="stSidebarCollapseButton"] {
     padding: 20px 16px 6px;
 }
 
-/* ── Sidebar Navigation ── */
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    padding: 0 8px;
+/* ── Sidebar Navigation (Streamlit radio) ── */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] {
+    padding: 8px 8px 16px;
 }
 
-.sidebar-nav-link {
+section[data-testid="stSidebar"] div[data-testid="stRadio"] div[role="radiogroup"] {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 2px;
+}
+
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-baseweb="radio"] {
+    margin: 0;
+}
+
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-baseweb="radio"] > div {
     padding: 9px 10px;
     border-radius: 6px;
-    text-decoration: none !important;
+    border-left: 2px solid transparent;
+    background: transparent;
     color: var(--text-body);
     font-family: 'Satoshi', sans-serif;
     font-size: 13px;
     font-weight: 500;
     transition: all 0.12s ease;
-    border-left: 2px solid transparent;
-    margin-bottom: 1px;
 }
-.sidebar-nav-link:hover {
+
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-baseweb="radio"] > div:hover {
     background: var(--bg-surface);
     color: var(--text-primary);
     border-left-color: var(--border-hover);
 }
 
-.sidebar-nav-link--active {
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-baseweb="radio"] input:checked + div {
     background: rgba(0,161,201,0.08);
     color: var(--text-primary);
     border-left-color: var(--accent);
     font-weight: 700;
 }
-.sidebar-nav-link--active:hover {
-    border-left-color: var(--accent);
-    background: rgba(0,161,201,0.12);
-}
 
-.sidebar-nav-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    color: var(--text-muted);
-    transition: color 0.12s ease;
-}
-.sidebar-nav-link:hover .sidebar-nav-icon,
-.sidebar-nav-link--active .sidebar-nav-icon {
-    color: var(--accent);
-}
-
-.sidebar-nav-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Keep generic sidebar button styles for non-nav buttons */
-section[data-testid="stSidebar"] .stButton > button {
-    font-family: 'Satoshi', sans-serif !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    color: var(--text-body) !important;
-    background: transparent !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-btn) !important;
-    padding: 8px 14px !important;
-    transition: all 0.15s ease !important;
-    box-shadow: none !important;
-}
-section[data-testid="stSidebar"] .stButton > button:hover {
-    background: var(--bg-surface) !important;
-    color: var(--text-primary) !important;
-    border-color: var(--border-hover) !important;
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-baseweb="radio"] span {
+    color: inherit;
 }
 
 /* ── Custom Sidebar ── */
