@@ -24,6 +24,7 @@ if os.path.isdir(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 API_BASE = os.environ.get("API_BASE_URL", "http://localhost:8000")
+API_BASE_BROWSER = os.environ.get("API_BASE_URL_BROWSER", API_BASE)
 
 
 CSS = '<link rel="stylesheet" href="/static/styles.css">'
@@ -156,7 +157,7 @@ PREDICT_PAGE = """<!DOCTYPE html>
                 if (document.getElementById('f_monto').value) features.monto = monto;
                 if (document.getElementById('f_distancia').value) features.distancia_km = distancia;
                 if (document.getElementById('f_hora').value) features.hora_transaccion = hora;
-                fetch('{API_BASE}/predict/' + encodeURIComponent(uc), {{
+                fetch('{API_BASE_BROWSER}/predict/' + encodeURIComponent(uc), {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{ features }})
@@ -242,7 +243,7 @@ async def predict_page() -> str:
     use_cases = get_use_cases()
     uc_options = "".join(f'<option value="{u}">{u}</option>' for u in use_cases)
     return PREDICT_PAGE.format(
-        CSS=CSS, NAV=nav_bar("predict"), UC_OPTIONS=uc_options, API_BASE=API_BASE
+        CSS=CSS, NAV=nav_bar("predict"), UC_OPTIONS=uc_options, API_BASE=API_BASE, API_BASE_BROWSER=API_BASE_BROWSER
     )
 
 
