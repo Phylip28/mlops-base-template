@@ -86,9 +86,9 @@ def main() -> None:
     )
     try:
         compose_cmd = _resolve_docker_compose()
-        # Rebuild prediction-ui to ensure latest code is in the container
-        print("[Docker] Rebuild prediction-ui con codigo reciente...", flush=True)
-        subprocess.run(compose_cmd + ["build", "--no-cache", "prediction-ui"], check=True)
+        # Rebuild prediction-ui only when Docker detects changes
+        print("[Docker] Build inteligente de prediction-ui...", flush=True)
+        subprocess.run(compose_cmd + ["build", "prediction-ui"], check=True)
         subprocess.run(compose_cmd + ["up", "-d"], check=True)
     except Exception as err:
         print(f"Error levantando Docker Compose: {err}")
@@ -146,12 +146,14 @@ def main() -> None:
                 api_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 api_process.kill()
-        print("Ejecutando docker-compose down...")
+        print("Ejecutando docker-compose down y limpieza de imagenes huerfanas...")
         try:
             subprocess.run(compose_cmd + ["down"], check=False)
+            # Limpia imagenes huerfanas resultantes del desarrollo sin tocar volumenes persistentes
+            subprocess.run(["docker", "image", "prune", "-f"], check=False)
         except Exception:
             pass
-        print("Contenedores detenidos.")
+        print("Contenedores detenidos y almacenamiento saneado.")
         sys.exit(0)
 
 
