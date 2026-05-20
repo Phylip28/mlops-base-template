@@ -33,22 +33,22 @@ result: pass
 
 ### 5. Header — Remove subtitle text
 expected: Subtitle "Multi-Tenant Streaming Platform" should be removed from header
-result: pending
+result: pass
 
 ### 6. Header — Remove Predict navigation button
 expected: Predict button in header navigation should be removed (single page, no nav needed)
-result: pending
+result: pass
 
 ### 7. CORS — Remote access configuration
 expected: CORS_ORIGINS environment variable should allow configuring allowed origins
-result: pending
+result: pass
 
 ## Summary
 
 total: 7
-passed: 4
+passed: 7
 issues: 0
-pending: 3
+pending: 0
 skipped: 0
 blocked: 0
 
