@@ -27,64 +27,18 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ── Immediate dark background — prevents white flash on full page reload ──
+st.markdown(
+    "<style>html,body,#root,#root>*,.stApp,[data-testid='stAppViewContainer'],div[data-testid='stApp'],.main,.block-container,iframe{background:#0f141a!important}</style>",
+    unsafe_allow_html=True,
+)
+
 from streamlit_app.styles import CSS
 from streamlit_app.utils import log_event
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-# ── Force sidebar always open + flash prevention ──
-st.markdown(
-    """
-    <script>
-    (function() {
-        // Prevent white flash — set dark background immediately
-        document.documentElement.style.backgroundColor = '#0f141a';
-        var styleEl = document.createElement('style');
-        styleEl.textContent = 'html, body, .stApp, iframe { background-color: #0f141a !important; }';
-        document.head.appendChild(styleEl);
-
-        function forceOpen() {
-            var s = document.querySelector('section[data-testid="stSidebar"]');
-            if (!s) return;
-            s.setAttribute('aria-expanded', 'true');
-            s.style.setProperty('width', '260px', 'important');
-            s.style.setProperty('min-width', '260px', 'important');
-            s.style.setProperty('max-width', '260px', 'important');
-            s.style.setProperty('transform', 'none', 'important');
-            s.style.setProperty('margin-left', '0', 'important');
-            s.style.setProperty('display', 'flex', 'important');
-            s.style.setProperty('visibility', 'visible', 'important');
-            s.style.setProperty('opacity', '1', 'important');
-            s.style.setProperty('position', 'relative', 'important');
-            s.style.setProperty('left', '0', 'important');
-            s.style.setProperty('overflow', 'visible', 'important');
-            s.style.setProperty('flex-shrink', '0', 'important');
-            var header = s.querySelector('div[data-testid="stSidebarHeader"]');
-            if (header) {
-                header.style.setProperty('height', '0', 'important');
-                header.style.setProperty('min-height', '0', 'important');
-                header.style.setProperty('overflow', 'hidden', 'important');
-                header.style.setProperty('padding', '0', 'important');
-                header.style.setProperty('margin', '0', 'important');
-                header.style.setProperty('opacity', '0', 'important');
-                header.style.setProperty('pointer-events', 'none', 'important');
-            }
-            var cb = s.querySelector('div[data-testid="stSidebarCollapseButton"]');
-            if (cb) cb.style.setProperty('display', 'none', 'important');
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', forceOpen);
-        } else {
-            forceOpen();
-        }
-        setTimeout(forceOpen, 300);
-        setTimeout(forceOpen, 1000);
-        setTimeout(forceOpen, 2000);
-    })();
-    </script>
-    """,
-    unsafe_allow_html=True,
-)
+# ── Sidebar styling handled via CSS; avoid JS reloads ──
 
 if "activity_log" not in st.session_state:
     st.session_state.activity_log = []
@@ -109,6 +63,9 @@ if nav_qp and nav_qp in {
 elif st.session_state.get("_first_load"):
     st.session_state.nav_page = "overview"
     st.session_state._first_load = False
+
+if st.session_state.get("nav_choice") != st.session_state.nav_page:
+    st.session_state.nav_choice = st.session_state.nav_page
 
 page: str = st.session_state.nav_page
 
@@ -177,7 +134,23 @@ _NAV_SECTIONS: list[_NavSection] = [
     },
 ]
 
+_NAV_KEYS: list[str] = []
+_NAV_LABELS: dict[str, str] = {}
+for section in _NAV_SECTIONS:
+    for item in section["items"]:
+        key = item["key"]
+        _NAV_KEYS.append(key)
+        _NAV_LABELS[key] = item["label"]
+
 # ── Sidebar ──────────────────────────────────────────────────────────────────
+
+
+def _nav_callback() -> None:
+    page_key = st.session_state.nav_choice
+    st.session_state.nav_page = page_key
+    st.query_params["nav"] = page_key
+    log_event("NAV", f"Navigated to {page_key}", "info")
+
 
 with st.sidebar:
     st.markdown(
@@ -189,30 +162,19 @@ with st.sidebar:
         </div>
         <div class="sidebar-brand-sub">Command Center</div>
     </div>
-    <div class="sidebar-nav">
     """,
         unsafe_allow_html=True,
     )
 
-    for section in _NAV_SECTIONS:
-        st.markdown(
-            f'<div class="sidebar-section-label">{section["label"]}</div>',
-            unsafe_allow_html=True,
-        )
-        for item in section["items"]:
-            page_key = item["key"]
-            page_label = item["label"]
-            icon_svg = item["icon"]
-            active = " sidebar-nav-link--active" if page == page_key else ""
-            st.markdown(
-                f"""<a class="sidebar-nav-link{active}" href="?nav={page_key}" target="_self">
-                  <span class="sidebar-nav-icon">{icon_svg}</span>
-                  <span class="sidebar-nav-label">{page_label}</span>
-                </a>""",
-                unsafe_allow_html=True,
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.radio(
+        "Navigation",
+        options=_NAV_KEYS,
+        index=_NAV_KEYS.index(page) if page in _NAV_KEYS else 0,
+        format_func=lambda key: _NAV_LABELS.get(key, key),
+        key="nav_choice",
+        label_visibility="collapsed",
+        on_change=_nav_callback,
+    )
 
 # ── Page routing ─────────────────────────────────────────────────────────────
 
