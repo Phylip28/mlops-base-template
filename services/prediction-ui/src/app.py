@@ -82,19 +82,9 @@ PREDICT_PAGE = """<!DOCTYPE html>
                 <label for="use_case">Use Case (Tenant)</label>
                 <select id="use_case">{UC_OPTIONS}</select>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="f_monto">Monto</label>
-                    <input type="number" id="f_monto" placeholder="e.g. 142.50" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="f_distancia">Distancia (km)</label>
-                    <input type="number" id="f_distancia" placeholder="e.g. 5.0" step="0.1">
-                </div>
-                <div class="form-group">
-                    <label for="f_hora">Hora Transacci&#243;n</label>
-                    <input type="number" id="f_hora" placeholder="e.g. 14.5" step="0.1">
-                </div>
+            <div class="form-group full">
+                <label for="f_json">Features JSON</label>
+                <textarea id="f_json" rows="6" placeholder='e.g. {{"monto": 142.50, "distancia_km": 5.0, "hora_transaccion": 14.5}}'></textarea>
             </div>
             <div class="btn-row">
                 <button id="predict-btn" class="btn btn-primary" onclick="predict_doPredict()">
@@ -142,21 +132,30 @@ PREDICT_PAGE = """<!DOCTYPE html>
                 btn.innerHTML = '⏳ Predicting...';
 
                 const uc = document.getElementById('use_case').value;
-                const monto = parseFloat(document.getElementById('f_monto').value) || 0;
-                const distancia = parseFloat(document.getElementById('f_distancia').value) || 0;
-                const hora = parseFloat(document.getElementById('f_hora').value) || 0;
-                if (!monto && !distancia && !hora) {{
-                    predict_showResult('error', 'Please fill in at least one feature');
+                const rawJson = document.getElementById('f_json').value.trim();
+                if (!rawJson) {{
+                    predict_showResult('error', 'Please enter a JSON object with features');
+                    btn.disabled = false;
+                    btn.innerHTML = '⚡ Predict';
+                    return;
+                }}
+                let features;
+                try {{
+                    features = JSON.parse(rawJson);
+                }} catch (e) {{
+                    predict_showResult('error', 'Invalid JSON: ' + e.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '⚡ Predict';
+                    return;
+                }}
+                if (typeof features !== 'object' || features === null || Array.isArray(features)) {{
+                    predict_showResult('error', 'Features must be a JSON object (key-value pairs)');
                     btn.disabled = false;
                     btn.innerHTML = '⚡ Predict';
                     return;
                 }}
                 document.getElementById('loading').classList.add('show');
                 document.getElementById('result').classList.remove('show', 'ok', 'error');
-                const features = {{}};
-                if (document.getElementById('f_monto').value) features.monto = monto;
-                if (document.getElementById('f_distancia').value) features.distancia_km = distancia;
-                if (document.getElementById('f_hora').value) features.hora_transaccion = hora;
                 fetch('{API_BASE_BROWSER}/predict/' + encodeURIComponent(uc), {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
@@ -227,7 +226,7 @@ PREDICT_PAGE = """<!DOCTYPE html>
             }};
 
             window.predict_clearForm = function() {{
-                ['f_monto','f_distancia','f_hora'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('f_json').value = '';
                 document.getElementById('result').classList.remove('show');
             }};
 
