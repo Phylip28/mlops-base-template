@@ -5,9 +5,10 @@ WORKDIR /app
 RUN pip install uv
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --active
+RUN uv sync
 
 COPY src ./src
+COPY static ./static
 
 EXPOSE 8001
 
