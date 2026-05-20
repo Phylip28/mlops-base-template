@@ -5,10 +5,19 @@ import urllib.request
 from typing import Any, cast
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="MLOps Prediction UI")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 if os.path.isdir(static_dir):
